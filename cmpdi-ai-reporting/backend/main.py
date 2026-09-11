@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 import fitz  # PyMuPDF
 from ingester import engine, STORAGE_DIR, PDF_DIR, CHROMA_DIR
-from scraper import scrape_public_data, SCRAPE_LOGS, add_log
+from scraper import scrape_official_coal_portal, scrape_public_data, purge_synthetic_pdfs, SCRAPE_LOGS, add_log
 from rag_engine import query_rag, pick_model, test_and_resolve_model, GROQ_API_KEY, extract_domain_entities_via_inference, ENGLISH_SEMANTIC_STOPWORDS
 from report_generator import build_multi_format_report, build_structured_report, REPORTS_DIR
 
@@ -89,14 +89,16 @@ def require_api_key(provided_key: Optional[str] = None) -> str:
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Initializing CMPDI AI Reporting API...")
-    if len(list(PDF_DIR.glob("*.pdf"))) < 100:
-        logger.info("Ensuring repository has 100+ documents...")
-        scrape_public_data()
+    logger.info("Initializing GeoIntel Core AI Reporting Engine...")
+    purge_synthetic_pdfs()
+    real_pdfs = list(PDF_DIR.glob("*.pdf"))
+    if len(real_pdfs) == 0:
+        logger.info("No documents found in repository. Crawling live official coal portals...")
+        scrape_official_coal_portal()
     if engine.collection.count() == 0:
-        logger.info("ChromaDB is empty. Ingesting documents...")
+        logger.info("ChromaDB vector store is empty. Ingesting real documents...")
         engine.ingest_directory()
-    logger.info(f"Startup complete. Vector store contains {engine.collection.count()} chunks across {len(list(PDF_DIR.glob('*.pdf')))} documents.")
+    logger.info(f"Startup complete. Vector store contains {engine.collection.count()} chunks across {len(list(PDF_DIR.glob('*.pdf')))} real documents.")
 
 @app.get("/api/config")
 def get_system_config():
@@ -284,14 +286,38 @@ def get_scrape_logs():
 @app.post("/api/trigger-scrape")
 def trigger_scrape():
     def run_job():
-        add_log("Triggering live scraper background task...")
-        scrape_public_data(full_scrape=True)
-        count = engine.ingest_directory()
-        add_log(f"Scrape and ingestion finished. {count} total chunks in ChromaDB.", "SUCCESS")
+        add_log("Triggering live scraper background task across coal.gov.in & coal.nic.in...")
+        scrape_official_coal_portal()
+        count = engine.ingest_directory(force_reindex=True)
+        if ANALYTICS_CACHE_FILE.exists():
+            try:
+                ANALYTICS_CACHE_FILE.unlink()
+            except Exception:
+                pass
+        add_log(f"Scrape and re-indexing finished. Total {count} spatial chunks in ChromaDB.", "SUCCESS")
     
     t = threading.Thread(target=run_job)
     t.start()
     return {"status": "started", "message": "Scraper task launched in background."}
+
+@app.api_route("/api/scrape-real-docs", methods=["GET", "POST"])
+def scrape_real_docs():
+    """Crawls official Ministry of Coal portals, downloads real PDFs, and re-indexes ChromaDB."""
+    add_log("Initiating live scrape of official Ministry of Coal portals...")
+    scraped_files = scrape_official_coal_portal()
+    count = engine.ingest_directory(force_reindex=True)
+    if ANALYTICS_CACHE_FILE.exists():
+        try:
+            ANALYTICS_CACHE_FILE.unlink()
+        except Exception:
+            pass
+    return {
+        "status": "success",
+        "message": f"Successfully scraped official government portals and indexed {count} spatial chunks.",
+        "documents": scraped_files,
+        "total_documents": len(list(PDF_DIR.glob("*.pdf"))),
+        "total_vectors": engine.collection.count()
+    }
 
 @app.get("/api/pdf-raw/{filename}")
 def serve_raw_pdf(filename: str):

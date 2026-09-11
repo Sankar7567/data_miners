@@ -12,44 +12,66 @@ def build_presentation():
     prs = pptx.Presentation(template_path)
     print(f"Loaded template with {len(prs.slides)} slides.")
 
-    # Colors
+    # Colors matching official aesthetic
     c_primary = RGBColor(15, 23, 42)      # Deep Slate #0f172a
     c_accent = RGBColor(14, 116, 144)     # Cyan/Blue #0e7490
     c_blue = RGBColor(30, 58, 138)        # Navy #1e3a8a
     c_dark = RGBColor(30, 41, 59)         # Slate-800 #1e293b
     c_body = RGBColor(51, 65, 85)         # Slate-700 #334155
-    c_highlight = RGBColor(180, 83, 9)    # Amber-700
+    c_team = RGBColor(194, 65, 12)        # Amber-orange for team highlight
 
     # -------------------------------------------------------------
     # SLIDE 1: TITLE PAGE
     # -------------------------------------------------------------
     s1 = prs.slides[0]
     
-    # Subtitle placeholder -> GeoIntel Core
+    # Reposition and resize text frames to strictly avoid colliding with the circle graphic
     for shape in s1.shapes:
         if shape.has_text_frame:
             if "TITLE PAGE" in shape.text:
+                shape.left = Inches(0.5)
+                shape.top = Inches(0.65)
+                shape.width = Inches(5.6)
+                shape.height = Inches(1.4)
+                
                 tf = shape.text_frame
+                tf.word_wrap = True
                 tf.clear()
-                p = tf.paragraphs[0]
-                p.text = "GeoIntel Core : Autonomous Geological Intelligence & Spatial Reporting Portal"
-                p.font.name = "Arial"
-                p.font.size = Pt(15)
-                p.font.bold = True
-                p.font.color.rgb = c_accent
-                p.alignment = PP_ALIGN.LEFT
+                
+                p1 = tf.paragraphs[0]
+                p1.text = "GeoIntel Core"
+                p1.font.name = "Arial"
+                p1.font.size = Pt(24)
+                p1.font.bold = True
+                p1.font.color.rgb = c_blue
+                p1.alignment = PP_ALIGN.LEFT
+                
+                p2 = tf.add_paragraph()
+                p2.text = "Autonomous Geological Intelligence & Spatial Reporting Portal"
+                p2.font.name = "Arial"
+                p2.font.size = Pt(13)
+                p2.font.bold = True
+                p2.font.color.rgb = c_accent
+                p2.space_before = Pt(4)
+                p2.alignment = PP_ALIGN.LEFT
 
             elif "Problem Statement ID" in shape.text:
+                shape.left = Inches(0.5)
+                shape.top = Inches(2.25)
+                shape.width = Inches(5.6)
+                shape.height = Inches(4.8)
+                
                 tf = shape.text_frame
+                tf.word_wrap = True
                 tf.clear()
                 
                 details = [
                     ("Problem Statement ID : ", "SIH26023 (Ministry of Coal / CMPDI)"),
-                    ("Problem Statement Title : ", "AI-Powered Geological & Mining Reporting Solution for CMPDI & CIL"),
-                    ("Theme : ", "Clean & Green Technology / Smart Automation & Mining"),
+                    ("Problem Statement Title : ", "AI-Powered Geological & Mining Reporting Solution"),
+                    ("Theme : ", "Clean & Green Technology / Smart Mining"),
                     ("PS Category : ", "Software"),
                     ("Team ID : ", "SIH2026-DM"),
-                    ("Team Name : ", "Data Miners (Registered on Portal)")
+                    ("Team Name : ", "data_miners")
                 ]
                 
                 for idx, (label, val) in enumerate(details):
@@ -59,36 +81,37 @@ def build_presentation():
                     r1 = p.add_run()
                     r1.text = label
                     r1.font.name = "Arial"
-                    r1.font.size = Pt(14)
+                    r1.font.size = Pt(13)
                     r1.font.bold = True
                     r1.font.color.rgb = c_blue
                     
                     r2 = p.add_run()
                     r2.text = val
                     r2.font.name = "Arial"
-                    r2.font.size = Pt(14)
+                    r2.font.size = Pt(13)
                     r2.font.bold = (label.startswith("Team Name") or label.startswith("Problem Statement ID"))
-                    r2.font.color.rgb = c_dark if not label.startswith("Team Name") else RGBColor(194, 65, 12)
+                    r2.font.color.rgb = c_team if label.startswith("Team Name") else c_dark
+
+    # Helper function to update team name oval strictly across all slides
+    def set_team_name_oval(slide):
+        for shape in slide.shapes:
+            if shape.has_text_frame and ("Your Team Name" in shape.text or "Data Miners" in shape.text or "data_miners" in shape.text):
+                tf = shape.text_frame
+                tf.clear()
+                p = tf.paragraphs[0]
+                p.text = "data_miners"
+                p.font.name = "Arial"
+                p.font.size = Pt(13)
+                p.font.bold = True
+                p.font.color.rgb = RGBColor(255, 255, 255)
+                p.alignment = PP_ALIGN.CENTER
 
     # -------------------------------------------------------------
     # SLIDE 2: PROPOSED SOLUTION
     # -------------------------------------------------------------
     s2 = prs.slides[1]
-    
-    # Update Team Name oval
-    for shape in s2.shapes:
-        if shape.has_text_frame and "Your Team Name" in shape.text:
-            tf = shape.text_frame
-            tf.clear()
-            p = tf.paragraphs[0]
-            p.text = "Data Miners"
-            p.font.name = "Arial"
-            p.font.size = Pt(13)
-            p.font.bold = True
-            p.font.color.rgb = RGBColor(255, 255, 255)
-            p.alignment = PP_ALIGN.CENTER
+    set_team_name_oval(s2)
 
-    # Update Title
     for shape in s2.shapes:
         if shape.has_text_frame and "IDEA TITLE" in shape.text:
             tf = shape.text_frame
@@ -96,38 +119,35 @@ def build_presentation():
             p = tf.paragraphs[0]
             p.text = "IDEA TITLE: GeoIntel Core - Autonomous Mining Intelligence"
             p.font.name = "Arial"
-            p.font.size = Pt(22)
+            p.font.size = Pt(20)
             p.font.bold = True
             p.font.color.rgb = c_blue
             p.alignment = PP_ALIGN.LEFT
 
-    # Remove template placeholder TextBox 8 and replace with clean dual-column layout
     for shape in list(s2.shapes):
         if shape.has_text_frame and "Proposed Solution" in shape.text:
             sp = shape._element
             sp.getparent().remove(sp)
 
-    # Left Column: Structured Bullet Points (no walls of text)
-    left_box = s2.shapes.add_textbox(Inches(0.6), Inches(1.25), Inches(6.8), Inches(5.1))
-    tf2 = left_box.text_frame
+    # Left Column: Crisp Bullet Points
+    left_box2 = s2.shapes.add_textbox(Inches(0.6), Inches(1.25), Inches(6.8), Inches(5.1))
+    tf2 = left_box2.text_frame
     tf2.word_wrap = True
 
     sections_s2 = [
         ("Proposed Solution & Prototype:", [
-            "Full-stack multimodal intelligence system tailored for CMPDI borehole logs, Detailed Project Reports (DPRs), and CIL operational archives.",
-            "Live working prototype featuring dual-pane split-screen spatial verification and autonomous multi-format report synthesis."
+            "Autonomous multimodal system for CMPDI borehole logs, Detailed Project Reports (DPRs), and CIL production data.",
+            "Functional split-screen prototype with real-time PyMuPDF spatial coordinate auditing."
         ]),
-        ("Detailed Explanation of Proposed Solution:", [
-            "PyMuPDF Coordinate Engine: Parses multi-hundred page mining PDFs into precise normalized bounding-box coordinates [x0, y0, x1, y1].",
-            "ChromaDB Spatial Store: 384-dimensional dense semantic vector representations indexed by CIL subsidiary, year, and mining horizon."
+        ("Core Engineering Capabilities:", [
+            "Spatial Vector Grounding: Extracts [x0, y0, x1, y1] coordinates per token for 100% auditable citations.",
+            "Dynamic View Synchronization: Citation bounding boxes update live on page navigation.",
+            "Autonomous Report Studio: Synthesizes executive briefs & DOCX files following custom engineering directives.",
+            "Pan-CIL Production Analytics: Benchmarks coal extraction, stripping ratios, and OBR across 8 subsidiaries."
         ]),
-        ("How It Directly Addresses the CMPDI/CIL Problem:", [
-            "Replaces weeks of manual cross-referencing with sub-second, auditable retrieval across 100+ official reports.",
-            "Eliminates hallucination risk: Every metric is linked to an exact source page and visual bounding-box snippet."
-        ]),
-        ("Innovation & Uniqueness:", [
-            "Zero Token Waste Architecture: Smart token budgeting (2200 tokens) with resilient Groq LPU hardware acceleration & offline fallback.",
-            "Dynamic Citation Highlighting: Real-time bounding box overlays that adapt on page navigation."
+        ("Problem Addressed & Innovation:", [
+            "Replaces manual multi-week PDF cross-referencing with sub-second verified semantic retrieval.",
+            "Zero Hallucination Guarantee: Every assertion is bound to verifiable text in official government documents."
         ])
     ]
 
@@ -151,14 +171,12 @@ def build_presentation():
             rb = p_b.add_run()
             rb.text = "• " + b
             rb.font.name = "Arial"
-            rb.font.size = Pt(10)
+            rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
-    # Right Column: Web App Screenshot
     s2.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_chat_split.png", 
                           Inches(7.6), Inches(1.3), width=Inches(5.1))
 
-    # Caption Box below image
     cap2 = s2.shapes.add_textbox(Inches(7.6), Inches(6.0), Inches(5.1), Inches(0.4))
     cp2 = cap2.text_frame.paragraphs[0]
     cp2.text = "Figure 1: GeoIntel Core Live Split-Screen RAG Assistant with Dynamic Spatial Bounding-Box Audit"
@@ -172,43 +190,31 @@ def build_presentation():
     # SLIDE 3: TECHNICAL APPROACH
     # -------------------------------------------------------------
     s3 = prs.slides[2]
-    
-    for shape in s3.shapes:
-        if shape.has_text_frame and "Your Team Name" in shape.text:
-            tf = shape.text_frame
-            tf.clear()
-            p = tf.paragraphs[0]
-            p.text = "Data Miners"
-            p.font.name = "Arial"
-            p.font.size = Pt(13)
-            p.font.bold = True
-            p.font.color.rgb = RGBColor(255, 255, 255)
-            p.alignment = PP_ALIGN.CENTER
+    set_team_name_oval(s3)
 
     for shape in list(s3.shapes):
         if shape.has_text_frame and "Technologies to be used" in shape.text:
             sp = shape._element
             sp.getparent().remove(sp)
 
-    # Top/Left Column: Bullet points
     left_box3 = s3.shapes.add_textbox(Inches(0.6), Inches(1.25), Inches(5.6), Inches(5.1))
     tf3 = left_box3.text_frame
     tf3.word_wrap = True
 
     sections_s3 = [
         ("Technologies to be Used:", [
-            "Frontend Architecture: React 18, Vite, Tailwind CSS, Lucide Icons, Glassmorphic UI with dynamic SVG spatial bounding-box overlay.",
-            "Backend & API Services: FastAPI, Python 3.12, Uvicorn, Asynchronous REST endpoints, multipart streaming PDF ingestion.",
-            "Spatial Text Extraction: PyMuPDF (Fitz) token-level coordinate parser preserving page geometry and tabular bounding boxes.",
-            "Semantic Vector Database: ChromaDB persistent vector store with All-MiniLM-L6-v2 384-dimensional dense embeddings.",
-            "LLM & Inference Hardware: Groq LPU Hardware Acceleration (Meta LLaMA 3.3 70B & Qwen 2.5 32B), Local Hybrid extractive fallback.",
-            "Multi-Format Document Engine: ReportLab PDF engine (inline browser preview), python-docx table compiler, Markdown generator."
+            "Frontend: React 18, Vite, Tailwind CSS, Lucide Icons, dynamic SVG coordinate overlays.",
+            "Backend API: FastAPI, Python 3.12, Uvicorn, asynchronous multipart streaming endpoints.",
+            "Spatial Extraction: PyMuPDF (Fitz) token parser preserving geometry & table bounding boxes.",
+            "Vector Database: ChromaDB persistent vector store with 384-dim dense embeddings.",
+            "Inference Hardware: Groq LPU Hardware Acceleration (LLaMA 3.3 70B & Qwen 2.5 32B).",
+            "Multi-Format Synthesis: ReportLab PDF engine, python-docx compiler, Markdown exporter."
         ]),
         ("Methodology & Implementation Pipeline:", [
-            "1. Multimodal Harvester: Ministry of Coal web scraper & instant drag-and-drop ingestion with automatic file versioning (_v2.pdf).",
-            "2. Spatial Indexing: Sliding-window chunking (400 words, 50-word overlap) retaining exact pixel bounding coordinates.",
-            "3. Grounded Retrieval: Filtered hybrid search combining dense vector similarity with inverted domain keyword indices.",
-            "4. Resilient Synthesis: Rate-limit resilient inference with smart token budgeting and 100% spatial citation provenance."
+            "1. Harvester: Ministry of Coal web scraper & instant drag-and-drop document ingestion.",
+            "2. Spatial Indexing: Sliding-window chunking retaining exact pixel bounding coordinates.",
+            "3. Grounded Retrieval: Hybrid search combining dense vectors with inverted keyword indices.",
+            "4. Resilient Synthesis: Dynamic token budgeting with local extractive fallback."
         ])
     ]
 
@@ -235,13 +241,12 @@ def build_presentation():
             rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
-    # Right Column: High-Res Architecture Diagram
     s3.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/architecture_diagram.png", 
                           Inches(6.4), Inches(1.3), width=Inches(6.3))
 
     cap3 = s3.shapes.add_textbox(Inches(6.4), Inches(5.95), Inches(6.3), Inches(0.4))
     cp3 = cap3.text_frame.paragraphs[0]
-    cp3.text = "Figure 2: GeoIntel Core End-to-End 4-Stage Multimodal Architecture (Designed by Team Data Miners)"
+    cp3.text = "Figure 2: GeoIntel Core End-to-End 4-Stage Multimodal Architecture (Team data_miners)"
     cp3.font.name = "Arial"
     cp3.font.size = Pt(8.5)
     cp3.font.italic = True
@@ -252,18 +257,7 @@ def build_presentation():
     # SLIDE 4: FEASIBILITY AND VIABILITY
     # -------------------------------------------------------------
     s4 = prs.slides[3]
-    
-    for shape in s4.shapes:
-        if shape.has_text_frame and "Your Team Name" in shape.text:
-            tf = shape.text_frame
-            tf.clear()
-            p = tf.paragraphs[0]
-            p.text = "Data Miners"
-            p.font.name = "Arial"
-            p.font.size = Pt(13)
-            p.font.bold = True
-            p.font.color.rgb = RGBColor(255, 255, 255)
-            p.alignment = PP_ALIGN.CENTER
+    set_team_name_oval(s4)
 
     for shape in list(s4.shapes):
         if shape.has_text_frame and "Analysis of the feasibility" in shape.text:
@@ -275,20 +269,16 @@ def build_presentation():
     tf4.word_wrap = True
 
     sections_s4 = [
-        ("Analysis of Feasibility & Production Scalability:", [
+        ("Feasibility & Operational Viability:", [
             "Validated on 100+ multi-page geological documents, CIL annual reviews, and detailed mine plans.",
-            "Sub-second vector indexing: High-throughput ingestion processes 50-page complex DPRs in under 3.2 seconds.",
-            "Enterprise Deployment: Containerized FastAPI & React microservices ready for secure on-premises CIL deployment or cloud nodes.",
-            "Data Sovereignty: 100% on-premises vector storage with zero external data exposure of confidential exploration reserves."
+            "Sub-second vector indexing: Parses 50-page complex DPRs in under 3.2 seconds.",
+            "Enterprise Deployment: Containerized microservices ready for secure on-premises CIL servers.",
+            "100% Data Sovereignty: Zero external data exposure of confidential exploration reserves."
         ]),
-        ("Potential Challenges & Operational Risks:", [
-            "Hardware API Rate Limiting: LLM token rate limits (TPM/RPM) during intensive multi-department reporting sessions.",
-            "Heterogeneous Legacy Archives: Complex multi-column tables, scanned geological boreholes, and unstandardized subsidiary formats."
-        ]),
-        ("Strategies for Overcoming Challenges:", [
-            "Rate-Limit Resiliency Engine: Dynamic token budgeting (2200 max tokens) with exponential backoff retry logic.",
-            "Graceful Hybrid Extractive Fallback: Autonomous fallback to local extractive ranking engine ensuring zero system downtime.",
-            "PyMuPDF Geometric Normalization: Exact token-level coordinate bounding boxes adapt seamlessly across diverse page aspect ratios."
+        ("Operational Challenges & Mitigations:", [
+            "API Rate Limiting: Resilient token budgeting (2200 max tokens) with exponential backoff retry.",
+            "Network Outage Tolerance: Local extractive fallback ensures zero system downtime.",
+            "Heterogeneous Archives: PyMuPDF token normalization adapts to any PDF format or scan geometry."
         ])
     ]
 
@@ -296,7 +286,7 @@ def build_presentation():
     for header, bullets in sections_s4:
         p_hdr = tf4.paragraphs[0] if first_p else tf4.add_paragraph()
         first_p = False
-        p_hdr.space_before = Pt(4)
+        p_hdr.space_before = Pt(5)
         p_hdr.space_after = Pt(2)
         r = p_hdr.add_run()
         r.text = header
@@ -307,12 +297,12 @@ def build_presentation():
 
         for b in bullets:
             p_b = tf4.add_paragraph()
-            p_b.space_after = Pt(2)
+            p_b.space_after = Pt(3)
             p_b.level = 1
             rb = p_b.add_run()
             rb.text = "• " + b
             rb.font.name = "Arial"
-            rb.font.size = Pt(10)
+            rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
     s4.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_document_repository.png", 
@@ -320,7 +310,7 @@ def build_presentation():
 
     cap4 = s4.shapes.add_textbox(Inches(7.6), Inches(5.95), Inches(5.1), Inches(0.4))
     cp4 = cap4.text_frame.paragraphs[0]
-    cp4.text = "Figure 3: Official Document Repository & Ingestion Hub (ChromaDB Vector Indexing & Real-Time Upload)"
+    cp4.text = "Figure 3: Official Document Repository & Ingestion Hub (ChromaDB Vector Indexing & Live Scraper)"
     cp4.font.name = "Arial"
     cp4.font.size = Pt(8.5)
     cp4.font.italic = True
@@ -331,18 +321,7 @@ def build_presentation():
     # SLIDE 5: IMPACT AND BENEFITS
     # -------------------------------------------------------------
     s5 = prs.slides[4]
-    
-    for shape in s5.shapes:
-        if shape.has_text_frame and "Your Team Name" in shape.text:
-            tf = shape.text_frame
-            tf.clear()
-            p = tf.paragraphs[0]
-            p.text = "Data Miners"
-            p.font.name = "Arial"
-            p.font.size = Pt(13)
-            p.font.bold = True
-            p.font.color.rgb = RGBColor(255, 255, 255)
-            p.alignment = PP_ALIGN.CENTER
+    set_team_name_oval(s5)
 
     for shape in list(s5.shapes):
         if shape.has_text_frame and "Potential impact on the target audience" in shape.text:
@@ -354,16 +333,16 @@ def build_presentation():
     tf5.word_wrap = True
 
     sections_s5 = [
-        ("Impact on Target Stakeholders (CMPDI & Coal India):", [
-            "CMPDI Geologists & Drilling Engineers: Instant lookup of Gondwana stratigraphy, Barakar formations, and regional borehole meterage (RI-I to RI-VII).",
-            "Mine General Managers & Planning Officers: Real-time benchmarking of Overburden Removal (OBR), stripping ratios (m³/t), and heavy equipment productivity.",
-            "Ministry of Coal & CIL Leadership: Automated generation of board-level performance summaries, reducing preparation cycles from weeks to minutes."
+        ("Direct Impact on Target Stakeholders:", [
+            "CMPDI Geologists: Instant lookup of Gondwana stratigraphy, Barakar formations, and regional meterage.",
+            "Mine Planning Officers: Real-time tracking of Overburden Removal (OBR), stripping ratios, and productivity.",
+            "Ministry of Coal Leadership: Board-level summaries compiled in minutes rather than weeks."
         ]),
-        ("Comprehensive Benefits of GeoIntel Core:", [
-            "Operational Speed: 85%+ reduction in technical assessment and Detailed Project Report (DPR) synthesis time.",
-            "Economic Value: Optimized stripping ratio tracking and FMC rail corridor dispatch, mitigating costly operational bottlenecks.",
-            "Zero Hallucination Guarantee: 100% auditable spatial citations eliminate flawed projections and regulatory compliance penalties.",
-            "Environmental Compliance: Rapid tracking of progressive mine closure plans, land reclamation, and afforestation targets per DGMS norms."
+        ("Quantifiable Strategic Benefits:", [
+            "85% Time Savings: Accelerates technical assessment and Detailed Project Report (DPR) evaluation.",
+            "Auditable Provenance: Spatial bounding boxes eliminate regulatory disputes and non-compliance risk.",
+            "Pan-CIL Scalability: Turnkey deployment across all 8 Coal India operational subsidiaries.",
+            "Zero Cloud Licensing: Fully self-contained stack with zero per-query commercial subscriptions."
         ])
     ]
 
@@ -382,12 +361,12 @@ def build_presentation():
 
         for b in bullets:
             p_b = tf5.add_paragraph()
-            p_b.space_after = Pt(2)
+            p_b.space_after = Pt(3)
             p_b.level = 1
             rb = p_b.add_run()
             rb.text = "• " + b
             rb.font.name = "Arial"
-            rb.font.size = Pt(10)
+            rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
     s5.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_analytics_dashboard.png", 
@@ -406,18 +385,7 @@ def build_presentation():
     # SLIDE 6: RESEARCH AND REFERENCES
     # -------------------------------------------------------------
     s6 = prs.slides[5]
-    
-    for shape in s6.shapes:
-        if shape.has_text_frame and "Your Team Name" in shape.text:
-            tf = shape.text_frame
-            tf.clear()
-            p = tf.paragraphs[0]
-            p.text = "Data Miners"
-            p.font.name = "Arial"
-            p.font.size = Pt(13)
-            p.font.bold = True
-            p.font.color.rgb = RGBColor(255, 255, 255)
-            p.alignment = PP_ALIGN.CENTER
+    set_team_name_oval(s6)
 
     for shape in list(s6.shapes):
         if shape.has_text_frame and "Details / Links of the reference" in shape.text:
@@ -429,13 +397,13 @@ def build_presentation():
     tf6.word_wrap = True
 
     sections_s6 = [
-        ("Details / Links of Reference & Research Work:", [
-            "Ministry of Coal, Government of India: 'Guidelines for Preparation of Mine Plans and Mine Closure Plans for Coal and Lignite Mines' (2025/2026 Directives).",
-            "Central Mine Planning & Design Institute (CMPDI): 'Annual Geological Exploration & Drilling Reports (RI-I to RI-VII)', Gondwana Basin Stratigraphy Archives, Ranchi.",
-            "Coal India Limited (CIL): 'Operational & Production Performance Review (FY 2023-24)', Subsidiary Reports (MCL, SECL, NCL, CCL, WCL, BCCL, ECL).",
-            "Directorate General of Mines Safety (DGMS): Statutory Operational Guidelines & Safety Circulars for Opencast and Underground Coal Extraction.",
-            "Spatial Document Parsing & Retrieval: PyMuPDF (Fitz) Token-Level Coordinate Mapping & ChromaDB High-Density Vector Embedding Architecture.",
-            "Hardware-Accelerated Inference: Groq LPU Deterministic Hardware Architecture for Ultra-Low Latency Large Language Model Serving."
+        ("Project Repository & Reference Documentation:", [
+            "GitHub Repository: https://github.com/Sankar7567/data_miners (Full source code, API, and setup guide).",
+            "Ministry of Coal, GoI: Guidelines for Preparation of Mine Plans & Mine Closure Plans — coal.gov.in",
+            "Central Mine Planning & Design Institute (CMPDI): Annual Geological Exploration & Drilling Reports — cmpdi.co.in",
+            "Coal India Limited (CIL): Operational Performance Reviews & Business Responsibility Reports — coalindia.in",
+            "Directorate General of Mines Safety (DGMS): Statutory Operational Guidelines & Safety Circulars.",
+            "PyMuPDF & ChromaDB: Open-source spatial coordinate extraction and high-density vector retrieval."
         ])
     ]
 
@@ -459,8 +427,12 @@ def build_presentation():
             rb = p_b.add_run()
             rb.text = "• " + b
             rb.font.name = "Arial"
-            rb.font.size = Pt(10.5)
-            rb.font.color.rgb = c_body
+            rb.font.size = Pt(10)
+            if "https://github.com/Sankar7567/data_miners" in b:
+                rb.font.bold = True
+                rb.font.color.rgb = RGBColor(14, 116, 144)
+            else:
+                rb.font.color.rgb = c_body
 
     s6.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_report_studio.png", 
                           Inches(7.6), Inches(1.3), width=Inches(5.1))

@@ -21,9 +21,16 @@ yarn-error.log*
 .pnpm-debug.log*
 frontend/node_modules/
 cmpdi-ai-reporting/frontend/node_modules/
+cmpdi-ai-reporting/frontend/dist/
 
-# OS / Editor
+# OS / Editor / Office locks
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+.~lock.*
+*.tmp
+
+# Storage Cache
+cmpdi-ai-reporting/backend/storage/chroma/
+cmpdi-ai-reporting/backend/storage/analytics_cache.json

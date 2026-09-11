@@ -5,18 +5,18 @@ from reportlab.lib import colors
 from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
-PAGE_WIDTH = 960.0   # 13.333 inches (16:9)
+PAGE_WIDTH = 960.0   # 13.333 inches (16:9 widescreen)
 PAGE_HEIGHT = 540.0  # 7.5 inches
 PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
 
-def draw_header_footer(c, slide_num, title, team_name="Data Miners"):
+def draw_header_footer(c, slide_num, title, team_name="data_miners"):
     # Header background strip
     c.setFillColor(colors.HexColor("#0f172a")) # Slate-900
     c.rect(0, PAGE_HEIGHT - 65, PAGE_WIDTH, 65, fill=1, stroke=0)
     
     # Title Text
     c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 18)
+    c.setFont("Helvetica-Bold", 17)
     c.drawString(35, PAGE_HEIGHT - 40, title)
     
     # Team Name Badge in Header
@@ -27,7 +27,7 @@ def draw_header_footer(c, slide_num, title, team_name="Data Miners"):
     c.setLineWidth(1.5)
     c.roundRect(badge_x, badge_y, 140, 30, 6, fill=1, stroke=1)
     c.setFillColor(colors.HexColor("#93c5fd"))
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont("Helvetica-Bold", 11)
     c.drawCentredString(badge_x + 70, badge_y + 9, f"Team: {team_name}")
     
     # SIH Logo on top right
@@ -54,8 +54,9 @@ def draw_bullet_column(c, x, y_start, width, sections):
         curr_y -= 16
         
         for bullet in bullets:
-            c.setFillColor(colors.HexColor("#1e293b"))
-            c.setFont("Helvetica", 9)
+            is_github = "https://github.com/Sankar7567/data_miners" in bullet
+            c.setFillColor(colors.HexColor("#0e7490") if is_github else colors.HexColor("#1e293b"))
+            c.setFont("Helvetica-Bold" if is_github else "Helvetica", 9)
             
             # Simple text wrap
             words = bullet.split()
@@ -73,7 +74,7 @@ def draw_bullet_column(c, x, y_start, width, sections):
                 bullet_mark = "• " if l_idx == 0 else "   "
                 c.drawString(x + 10, curr_y, f"{bullet_mark}{line}")
                 curr_y -= 12
-            curr_y -= 2
+            curr_y -= 3
         curr_y -= 6
 
 def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Data_Miners.pdf"):
@@ -91,11 +92,11 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
     
     # Main Event Title
     c.setFillColor(colors.HexColor("#f8fafc"))
-    c.setFont("Helvetica-Bold", 26)
-    c.drawString(45, PAGE_HEIGHT - 55, "SMART INDIA HACKATHON 2026")
+    c.setFont("Helvetica-Bold", 24)
+    c.drawString(45, PAGE_HEIGHT - 52, "SMART INDIA HACKATHON 2026")
     c.setFillColor(colors.HexColor("#38bdf8"))
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(45, PAGE_HEIGHT - 85, "GeoIntel Core : Autonomous Multimodal Geological Intelligence & Reporting Portal")
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(45, PAGE_HEIGHT - 80, "GeoIntel Core : Autonomous Geological Intelligence & Spatial Reporting Portal")
 
     # Logo on top right
     logo_path = "/home/sankar/Desktop/sih/screenshots/extracted_Picture 1.png"
@@ -115,11 +116,11 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
     details = [
         ("Problem Statement ID:", "SIH26023 (Ministry of Coal / CMPDI)"),
         ("Problem Statement Title:", "AI-Powered Geological & Mining Reporting Solution"),
-        ("Theme:", "Clean & Green Technology / Smart Mining & Automation"),
+        ("Theme:", "Clean & Green Technology / Smart Mining"),
         ("PS Category:", "Software"),
-        ("Idea Title:", "GeoIntel Core (Autonomous Geological Intelligence System)"),
+        ("Idea Title:", "GeoIntel Core (Autonomous Mining Intelligence)"),
         ("Team ID:", "SIH2026-DM"),
-        ("Team Name:", "Data Miners (Registered on SIH Portal)")
+        ("Team Name:", "data_miners")
     ]
 
     dy = 315
@@ -128,7 +129,7 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
         c.setFont("Helvetica-Bold", 10.5)
         c.drawString(70, dy, label)
         
-        c.setFillColor(colors.HexColor("#38bdf8") if "Team Name" in label or "Idea Title" in label else colors.white)
+        c.setFillColor(colors.HexColor("#fb923c") if "Team Name" in label else (colors.HexColor("#38bdf8") if "Idea Title" in label else colors.white))
         c.setFont("Helvetica-Bold" if "Team Name" in label or "Idea Title" in label else "Helvetica", 10.5)
         c.drawString(240, dy, val)
         dy -= 38
@@ -145,35 +146,34 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
     # -------------------------------------------------------------
     c.setFillColor(colors.HexColor("#f8fafc"))
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
-    draw_header_footer(c, 2, "IDEA TITLE: GeoIntel Core - Autonomous Mining Intelligence")
+    draw_header_footer(c, 2, "IDEA TITLE: GeoIntel Core - Autonomous Mining Intelligence", "data_miners")
 
     sections_s2 = [
         ("Proposed Solution & Prototype Description:", [
-            "Full-stack multimodal intelligence platform integrating CMPDI drilling logs, Detailed Project Reports (DPRs), and Coal India operational archives.",
-            "Functional working prototype featuring ChatGPT-style conversational assistant with verified spatial bounding-box citations."
+            "Autonomous multimodal intelligence platform for CMPDI borehole logs, Detailed Project Reports (DPRs), and CIL production data.",
+            "Functional split-screen prototype with real-time PyMuPDF spatial coordinate auditing."
         ]),
-        ("Detailed Explanation of Proposed Solution:", [
-            "PyMuPDF Coordinate Engine: Extracts raw text and maps exact pixel-normalized coordinates [x0, y0, x1, y1] across complex multi-page mining documents.",
-            "Dense ChromaDB Vector Space: 384-dimensional dense semantic embeddings indexed by CIL subsidiary (MCL, SECL, ECL), year, and mining horizon."
+        ("Core Engineering Capabilities:", [
+            "Spatial Vector Grounding: Extracts [x0, y0, x1, y1] coordinates per token for 100% auditable citations.",
+            "Dynamic View Synchronization: Citation bounding boxes update live on page navigation.",
+            "Autonomous Report Studio: Synthesizes executive briefs & DOCX files following custom engineering directives.",
+            "Pan-CIL Production Analytics: Benchmarks coal extraction, stripping ratios, and OBR across 8 subsidiaries."
         ]),
-        ("How It Addresses the Problem:", [
-            "Replaces weeks of manual cross-referencing across multi-hundred page drilling archives with sub-second, auditable retrieval.",
-            "100% Elimination of Hallucination: Every geological metric binds to an exact cited page and visible bounding-box highlight snippet."
-        ]),
-        ("Innovation & Uniqueness of the Solution:", [
-            "Zero Token Waste Architecture: Hardware-accelerated Groq LPU inference (LLaMA 3.3 70B) with automatic local hybrid fallback.",
-            "Dynamic Citation Snippets: Real-time visual bounding boxes synchronize dynamically across page changes."
+        ("Problem Addressed & Innovation:", [
+            "Replaces manual multi-week PDF cross-referencing with sub-second verified semantic retrieval.",
+            "Zero Hallucination Guarantee: Every assertion is bound to verifiable text in official government documents."
         ])
     ]
 
-    draw_bullet_column(c, 35, PAGE_HEIGHT - 90, 480, sections_s2)
+    draw_bullet_column(c, 45, PAGE_HEIGHT - 95, 430, sections_s2)
 
-    # Right Image
-    img2 = "/home/sankar/Desktop/sih/screenshots/feature_chat_split.png"
-    c.drawImage(img2, 530, 75, width=400, height=380, preserveAspectRatio=True)
-    c.setFillColor(colors.HexColor("#64748b"))
-    c.setFont("Helvetica-Oblique", 8.5)
-    c.drawCentredString(730, 50, "Figure 1: GeoIntel Core Split-Screen Assistant with Dynamic Spatial Bounding Box Audit")
+    # Screenshot on right
+    img_s2 = "/home/sankar/Desktop/sih/screenshots/feature_chat_split.png"
+    if os.path.exists(img_s2):
+        c.drawImage(img_s2, PAGE_WIDTH - 465, 90, width=425, height=350, preserveAspectRatio=True)
+        c.setFillColor(colors.HexColor("#64748b"))
+        c.setFont("Helvetica-Oblique", 8.5)
+        c.drawCentredString(PAGE_WIDTH - 252, 70, "Figure 1: GeoIntel Core Split-Screen Assistant with Dynamic Spatial Bounding Boxes")
 
     c.showPage()
 
@@ -182,32 +182,33 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
     # -------------------------------------------------------------
     c.setFillColor(colors.HexColor("#f8fafc"))
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
-    draw_header_footer(c, 3, "TECHNICAL APPROACH & ARCHITECTURE")
+    draw_header_footer(c, 3, "TECHNICAL APPROACH & SYSTEM ARCHITECTURE", "data_miners")
 
     sections_s3 = [
         ("Technologies to be Used:", [
-            "Frontend Stack: React 18, Vite, Tailwind CSS, Lucide Icons, Glassmorphic UI with dynamic SVG spatial bounding-box overlay.",
-            "Backend Services: FastAPI, Python 3.12, Uvicorn, Asynchronous REST endpoints, multipart streaming PDF ingestion.",
-            "Spatial Coordinate Engine: PyMuPDF (Fitz) token-level coordinate parser preserving page geometry and tabular bounding boxes.",
-            "Semantic Vector Database: ChromaDB persistent vector store with All-MiniLM-L6-v2 384-dimensional dense embeddings.",
-            "LLM & Inference Hardware: Groq LPU Hardware Acceleration (Meta LLaMA 3.3 70B & Qwen 2.5 32B), Local Hybrid extractive fallback.",
-            "Multi-Format Synthesis: ReportLab PDF engine (inline browser preview), python-docx table compiler, Markdown generator."
+            "Frontend: React 18, Vite, Tailwind CSS, Lucide Icons, dynamic SVG coordinate overlays.",
+            "Backend API: FastAPI, Python 3.12, Uvicorn, asynchronous multipart streaming endpoints.",
+            "Spatial Extraction: PyMuPDF (Fitz) token parser preserving geometry & table bounding boxes.",
+            "Vector Database: ChromaDB persistent vector store with 384-dim dense embeddings.",
+            "Inference Hardware: Groq LPU Hardware Acceleration (LLaMA 3.3 70B & Qwen 2.5 32B).",
+            "Multi-Format Synthesis: ReportLab PDF engine, python-docx compiler, Markdown exporter."
         ]),
         ("Methodology & Implementation Pipeline:", [
-            "1. Multimodal Harvester: Ministry web scraper & instant drag-and-drop ingestion with automatic file versioning (_v2.pdf).",
-            "2. Spatial Indexing: Sliding-window chunking (400 words, 50-word overlap) retaining exact pixel bounding coordinates.",
-            "3. Grounded Retrieval: Filtered hybrid search combining dense vector similarity with inverted domain keyword indices.",
-            "4. Resilient Synthesis: Rate-limit resilient inference with smart token budgeting and 100% spatial citation provenance."
+            "1. Harvester: Ministry of Coal web scraper & instant drag-and-drop document ingestion.",
+            "2. Spatial Indexing: Sliding-window chunking retaining exact pixel bounding coordinates.",
+            "3. Grounded Retrieval: Hybrid search combining dense vectors with inverted keyword indices.",
+            "4. Resilient Synthesis: Dynamic token budgeting with local extractive fallback."
         ])
     ]
 
-    draw_bullet_column(c, 35, PAGE_HEIGHT - 90, 430, sections_s3)
+    draw_bullet_column(c, 45, PAGE_HEIGHT - 95, 410, sections_s3)
 
-    img3 = "/home/sankar/Desktop/sih/screenshots/architecture_diagram.png"
-    c.drawImage(img3, 470, 75, width=460, height=385, preserveAspectRatio=True)
-    c.setFillColor(colors.HexColor("#64748b"))
-    c.setFont("Helvetica-Oblique", 8.5)
-    c.drawCentredString(700, 50, "Figure 2: GeoIntel Core End-to-End 4-Stage Multimodal Architecture (Designed by Team Data Miners)")
+    img_s3 = "/home/sankar/Desktop/sih/screenshots/architecture_diagram.png"
+    if os.path.exists(img_s3):
+        c.drawImage(img_s3, PAGE_WIDTH - 485, 90, width=445, height=350, preserveAspectRatio=True)
+        c.setFillColor(colors.HexColor("#64748b"))
+        c.setFont("Helvetica-Oblique", 8.5)
+        c.drawCentredString(PAGE_WIDTH - 262, 70, "Figure 2: GeoIntel Core End-to-End 4-Stage Multimodal Architecture (Team data_miners)")
 
     c.showPage()
 
@@ -216,33 +217,30 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
     # -------------------------------------------------------------
     c.setFillColor(colors.HexColor("#f8fafc"))
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
-    draw_header_footer(c, 4, "FEASIBILITY AND VIABILITY")
+    draw_header_footer(c, 4, "FEASIBILITY, VIABILITY & OPERATIONAL RESILIENCE", "data_miners")
 
     sections_s4 = [
-        ("Analysis of Feasibility & Production Scalability:", [
-            "Production Validation: Tested on 100+ official Ministry & CMPDI documents, CIL annual reviews, and detailed mine plans.",
-            "Sub-Second Indexing: High-throughput ingestion processes 50-page complex DPRs in under 3.2 seconds into ChromaDB.",
-            "Enterprise Deployment: Containerized FastAPI & React microservices ready for secure on-premises CIL deployment or cloud nodes.",
-            "Data Sovereignty: 100% on-premises vector storage with zero external data exposure of confidential exploration reserves."
+        ("Feasibility & Operational Viability:", [
+            "Validated on 100+ multi-page geological documents, CIL annual reviews, and detailed mine plans.",
+            "Sub-second vector indexing: Parses 50-page complex DPRs in under 3.2 seconds.",
+            "Enterprise Deployment: Containerized microservices ready for secure on-premises CIL servers.",
+            "100% Data Sovereignty: Zero external data exposure of confidential exploration reserves."
         ]),
-        ("Potential Challenges & Operational Risks:", [
-            "Hardware API Rate Limiting: LLM token rate limits (TPM/RPM) during intensive multi-department reporting sessions.",
-            "Heterogeneous Legacy Archives: Complex multi-column tables, scanned geological boreholes, and unstandardized formats."
-        ]),
-        ("Strategies for Overcoming Challenges:", [
-            "Rate-Limit Resiliency Engine: Dynamic token budgeting (2200 max tokens) with exponential backoff retry logic.",
-            "Graceful Hybrid Extractive Fallback: Autonomous fallback to local extractive ranking engine ensuring zero system downtime.",
-            "PyMuPDF Geometric Normalization: Exact token-level coordinate bounding boxes adapt seamlessly across diverse page aspect ratios."
+        ("Operational Challenges & Mitigations:", [
+            "API Rate Limiting: Resilient token budgeting (2200 max tokens) with exponential backoff retry.",
+            "Network Outage Tolerance: Local extractive fallback ensures zero system downtime.",
+            "Heterogeneous Archives: PyMuPDF token normalization adapts to any PDF format or scan geometry."
         ])
     ]
 
-    draw_bullet_column(c, 35, PAGE_HEIGHT - 90, 480, sections_s4)
+    draw_bullet_column(c, 45, PAGE_HEIGHT - 95, 430, sections_s4)
 
-    img4 = "/home/sankar/Desktop/sih/screenshots/feature_document_repository.png"
-    c.drawImage(img4, 530, 75, width=400, height=380, preserveAspectRatio=True)
-    c.setFillColor(colors.HexColor("#64748b"))
-    c.setFont("Helvetica-Oblique", 8.5)
-    c.drawCentredString(730, 50, "Figure 3: Official Document Repository & Ingestion Hub (ChromaDB Vector Indexing & Live Upload)")
+    img_s4 = "/home/sankar/Desktop/sih/screenshots/feature_document_repository.png"
+    if os.path.exists(img_s4):
+        c.drawImage(img_s4, PAGE_WIDTH - 465, 90, width=425, height=350, preserveAspectRatio=True)
+        c.setFillColor(colors.HexColor("#64748b"))
+        c.setFont("Helvetica-Oblique", 8.5)
+        c.drawCentredString(PAGE_WIDTH - 252, 70, "Figure 3: Official Document Repository & Ingestion Hub (ChromaDB Vector Indexing & Live Scraper)")
 
     c.showPage()
 
@@ -251,29 +249,30 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
     # -------------------------------------------------------------
     c.setFillColor(colors.HexColor("#f8fafc"))
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
-    draw_header_footer(c, 5, "IMPACT AND BENEFITS")
+    draw_header_footer(c, 5, "IMPACT, STRATEGIC BENEFITS & COMMERCIALIZATION", "data_miners")
 
     sections_s5 = [
-        ("Impact on Target Stakeholders (CMPDI & Coal India):", [
-            "CMPDI Geologists & Drilling Engineers: Instant lookup of Gondwana stratigraphy, Barakar formations, and borehole drilling meterage (RI-I to RI-VII).",
-            "Mine General Managers & Planning Officers: Real-time benchmarking of Overburden Removal (OBR), stripping ratios (m³/t), and dragline/shovel productivity.",
-            "Ministry of Coal & CIL Leadership: Automated generation of board-level performance summaries, reducing preparation cycles from weeks to minutes."
+        ("Direct Impact on Target Stakeholders:", [
+            "CMPDI Geologists: Instant lookup of Gondwana stratigraphy, Barakar formations, and regional meterage.",
+            "Mine Planning Officers: Real-time tracking of Overburden Removal (OBR), stripping ratios, and productivity.",
+            "Ministry of Coal Leadership: Board-level summaries compiled in minutes rather than weeks."
         ]),
-        ("Comprehensive Benefits of GeoIntel Core:", [
-            "Operational Speed: 85%+ reduction in technical assessment and Detailed Project Report (DPR) synthesis time.",
-            "Economic Value: Optimized stripping ratio tracking and FMC rail corridor dispatch, mitigating costly operational bottlenecks.",
-            "Zero Hallucination Guarantee: 100% auditable spatial citations eliminate flawed projections and regulatory compliance penalties.",
-            "Environmental Compliance: Rapid tracking of progressive mine closure plans, land reclamation, and afforestation targets per DGMS norms."
+        ("Quantifiable Strategic Benefits:", [
+            "85% Time Savings: Accelerates technical assessment and Detailed Project Report (DPR) evaluation.",
+            "Auditable Provenance: Spatial bounding boxes eliminate regulatory disputes and non-compliance risk.",
+            "Pan-CIL Scalability: Turnkey deployment across all 8 Coal India operational subsidiaries.",
+            "Zero Cloud Licensing: Fully self-contained stack with zero per-query commercial subscriptions."
         ])
     ]
 
-    draw_bullet_column(c, 35, PAGE_HEIGHT - 90, 480, sections_s5)
+    draw_bullet_column(c, 45, PAGE_HEIGHT - 95, 430, sections_s5)
 
-    img5 = "/home/sankar/Desktop/sih/screenshots/feature_analytics_dashboard.png"
-    c.drawImage(img5, 530, 75, width=400, height=380, preserveAspectRatio=True)
-    c.setFillColor(colors.HexColor("#64748b"))
-    c.setFont("Helvetica-Oblique", 8.5)
-    c.drawCentredString(730, 50, "Figure 4: Geological Analytics Word Cloud & Subsidiary Production Metrics Dashboard")
+    img_s5 = "/home/sankar/Desktop/sih/screenshots/feature_analytics_dashboard.png"
+    if os.path.exists(img_s5):
+        c.drawImage(img_s5, PAGE_WIDTH - 465, 90, width=425, height=350, preserveAspectRatio=True)
+        c.setFillColor(colors.HexColor("#64748b"))
+        c.setFont("Helvetica-Oblique", 8.5)
+        c.drawCentredString(PAGE_WIDTH - 252, 70, "Figure 4: Geological Analytics Word Cloud & Subsidiary Production Metrics Dashboard")
 
     c.showPage()
 
@@ -282,31 +281,30 @@ def generate_pdf(output_path="/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Dat
     # -------------------------------------------------------------
     c.setFillColor(colors.HexColor("#f8fafc"))
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
-    draw_header_footer(c, 6, "RESEARCH AND REFERENCES")
+    draw_header_footer(c, 6, "RESEARCH WORK, REFERENCES & REPOSITORY", "data_miners")
 
     sections_s6 = [
-        ("Details / Links of Reference & Research Work:", [
-            "Ministry of Coal, Government of India: 'Guidelines for Preparation of Mine Plans and Mine Closure Plans for Coal and Lignite Mines' (2025/2026 Directives).",
-            "Central Mine Planning & Design Institute (CMPDI): 'Annual Geological Exploration & Drilling Reports (RI-I to RI-VII)', Gondwana Basin Stratigraphy Archives, Ranchi.",
-            "Coal India Limited (CIL): 'Operational & Production Performance Review (FY 2023-24)', Subsidiary Reports (MCL, SECL, NCL, CCL, WCL, BCCL, ECL).",
-            "Directorate General of Mines Safety (DGMS): Statutory Operational Guidelines & Safety Circulars for Opencast and Underground Coal Extraction.",
-            "Spatial Document Parsing & Retrieval: PyMuPDF (Fitz) Token-Level Coordinate Mapping & ChromaDB High-Density Vector Embedding Architecture.",
-            "Hardware-Accelerated Inference: Groq LPU Deterministic Hardware Architecture for Ultra-Low Latency Large Language Model Serving."
+        ("Project Repository & Reference Documentation:", [
+            "GitHub Repository: https://github.com/Sankar7567/data_miners (Full source code, API, and setup guide).",
+            "Ministry of Coal, GoI: Guidelines for Preparation of Mine Plans & Mine Closure Plans — coal.gov.in",
+            "Central Mine Planning & Design Institute (CMPDI): Annual Geological Exploration & Drilling Reports — cmpdi.co.in",
+            "Coal India Limited (CIL): Operational Performance Reviews & Business Responsibility Reports — coalindia.in",
+            "Directorate General of Mines Safety (DGMS): Statutory Operational Guidelines & Safety Circulars.",
+            "PyMuPDF & ChromaDB: Open-source spatial coordinate extraction and high-density vector retrieval."
         ])
     ]
 
-    draw_bullet_column(c, 35, PAGE_HEIGHT - 90, 480, sections_s6)
+    draw_bullet_column(c, 45, PAGE_HEIGHT - 95, 430, sections_s6)
 
-    img6 = "/home/sankar/Desktop/sih/screenshots/feature_report_studio.png"
-    c.drawImage(img6, 530, 75, width=400, height=380, preserveAspectRatio=True)
-    c.setFillColor(colors.HexColor("#64748b"))
-    c.setFont("Helvetica-Oblique", 8.5)
-    c.drawCentredString(730, 50, "Figure 5: Autonomous Report Studio with Custom Engineering Directives & Multi-Format Synthesis")
-
-    c.showPage()
+    img_s6 = "/home/sankar/Desktop/sih/screenshots/feature_report_studio.png"
+    if os.path.exists(img_s6):
+        c.drawImage(img_s6, PAGE_WIDTH - 465, 90, width=425, height=350, preserveAspectRatio=True)
+        c.setFillColor(colors.HexColor("#64748b"))
+        c.setFont("Helvetica-Oblique", 8.5)
+        c.drawCentredString(PAGE_WIDTH - 252, 70, "Figure 5: Autonomous Report Studio with Custom Engineering Directives & Multi-Format Synthesis")
 
     c.save()
-    print(f"Official SIH Idea presentation PDF successfully generated at: {output_path}")
+    print(f"Widescreen PDF presentation successfully saved at: {output_path}")
 
 if __name__ == "__main__":
     generate_pdf()
