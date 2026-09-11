@@ -45,8 +45,32 @@ function renderMarkdownBlocks(markdownText) {
     tableBuffer = [];
   };
 
+  const auditSection = [];
+  let inAudit = false;
+
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
+    if (trimmed === "### Factual Audit Summary") {
+      inAudit = true;
+      auditSection.push(<div key={`audit-${idx}`} className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 my-4">
+        <h3 className="text-emerald-300 font-bold mb-2 flex items-center gap-2 text-sm"><Shield className="w-4 h-4"/> Factual Audit Summary</h3>
+      });
+      return;
+    }
+
+    if (inAudit && trimmed.startsWith("## ")) {
+      inAudit = false;
+    }
+
+    if (inAudit) {
+      if (trimmed.startsWith("- ")) {
+        auditSection[auditSection.length - 1] = React.cloneElement(auditSection[auditSection.length - 1], {
+          children: [...auditSection[auditSection.length - 1].props.children, <p key={idx} className="text-emerald-100/80 text-[11px] py-0.5 ml-2">• {trimmed.substring(2)}</p>]
+        });
+        return;
+      }
+    }
+
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       const cells = trimmed.split("|").slice(1, -1).map(c => c.trim().replace(/\*\*/g, ''));
       tableBuffer.push(cells);
@@ -78,6 +102,10 @@ function renderMarkdownBlocks(markdownText) {
 
   if (tableBuffer.length > 0) {
     flushTable("last");
+  }
+
+  if (auditSection.length > 0) {
+     blocks.unshift(...auditSection);
   }
 
   return blocks;
@@ -170,6 +198,22 @@ export default function ReportBuilder({ apiKey, availableFiles = [] }) {
     { id: "Technical Geological Audit", label: "Technical Geological Audit", desc: "In-depth stratigraphic data, drilling logs, precision metrics" },
     { id: "Public Release", label: "Public Release & Dissemination", desc: "Clear, transparent communication for public & investor portals" }
   ];
+
+  const logFeedback = async (feedbackType) => {
+    try {
+      await fetch("/api/report-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          report_name: reportResult.base_name,
+          feedback: feedbackType
+        }),
+      });
+      alert("Feedback logged. Thank you!");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -429,37 +473,42 @@ export default function ReportBuilder({ apiKey, availableFiles = [] }) {
                 <span>Ready: {reportResult.base_name}</span>
               </div>
 
-              {/* 3 Explicit Format Download Buttons */}
-              <div className="flex items-center gap-2">
-                <a
-                  href={reportResult.files.docx.url}
-                  download
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/50 text-blue-200 rounded-lg font-semibold transition-all text-[11px] shadow-sm"
-                >
-                  <FileText className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Word (.docx)</span>
-                  <Download className="w-3 h-3 text-blue-300 ml-0.5" />
-                </a>
+              {/* Feedback and Download Actions */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-400 italic">Was this report useful?</span>
+                  <button onClick={() => logFeedback("useful")} className="hover:scale-110 transition text-sm" title="Useful">👍</button>
+                  <button onClick={() => logFeedback("not_useful")} className="hover:scale-110 transition text-sm" title="Not Useful">👎</button>
+                </div>
 
-                <a
-                  href={reportResult.files.pdf.url}
-                  download
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/30 hover:bg-red-600/50 border border-red-500/50 text-red-200 rounded-lg font-semibold transition-all text-[11px] shadow-sm"
-                >
-                  <Shield className="w-3.5 h-3.5 text-red-400" />
-                  <span>PDF (.pdf)</span>
-                  <Download className="w-3 h-3 text-red-300 ml-0.5" />
-                </a>
+                <div className="flex items-center gap-2 border-l border-slate-700 pl-4">
+                  <a
+                    href={reportResult.files.docx.url}
+                    download
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/50 text-blue-200 rounded-lg font-semibold transition-all text-[11px] shadow-sm"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Word</span>
+                  </a>
 
-                <a
-                  href={reportResult.files.markdown.url}
-                  download
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-200 rounded-lg font-semibold transition-all text-[11px] shadow-sm"
-                >
-                  <FileCode className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Markdown (.md)</span>
-                  <Download className="w-3 h-3 text-emerald-300 ml-0.5" />
-                </a>
+                  <a
+                    href={reportResult.files.pdf.url}
+                    download
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/30 hover:bg-red-600/50 border border-red-500/50 text-red-200 rounded-lg font-semibold transition-all text-[11px] shadow-sm"
+                  >
+                    <Shield className="w-3.5 h-3.5 text-red-400" />
+                    <span>PDF</span>
+                  </a>
+
+                  <a
+                    href={reportResult.files.markdown.url}
+                    download
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/50 text-emerald-200 rounded-lg font-semibold transition-all text-[11px] shadow-sm"
+                  >
+                    <FileCode className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>MD</span>
+                  </a>
+                </div>
               </div>
             </div>
           )}

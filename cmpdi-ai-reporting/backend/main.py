@@ -610,10 +610,17 @@ def get_entity_occurrences(term: str = Query(..., min_length=1)):
         "documents": docs_list[:12]
     }
 
-@app.post("/api/client-error")
-async def log_client_error(payload: Dict[str, Any] = Body(...)):
-    """Log uncaught errors and rejections from the React frontend."""
-    logger.error(f"[BROWSER CLIENT EXCEPTION]: {json.dumps(payload, indent=2)}")
+@app.post("/api/report-feedback")
+def log_report_feedback(report_name: str, feedback: str = Body(...)):
+    """Log user feedback for a generated report."""
+    feedback_file = REPORTS_DIR / "feedback.jsonl"
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "report_name": report_name,
+        "feedback": feedback
+    }
+    with open(feedback_file, "a") as f:
+        f.write(json.dumps(entry) + "\n")
     return {"status": "logged"}
 
 @app.get("/api/reports-history")

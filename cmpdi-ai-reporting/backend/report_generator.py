@@ -49,6 +49,38 @@ def sanitize_for_reportlab(text: str) -> str:
     text = re.sub(r'`(.+?)`', r'<font face="Courier">\1</font>', text)
     return text
 
+# -------------------------------------------------------------
+# Factual Audit Workflow
+# -------------------------------------------------------------
+def audit_generated_assertions(body: str, citations: List[Dict[str, Any]], client: Any, model: str) -> str:
+    """Verifies factual consistency of generated text against source citations."""
+    citation_text = "\n".join([f"Source: {c['source']}\nSnippet: {c['exact_snippet']}" for c in citations])
+
+    prompt = (
+        "You are an Auditor for CMPDI/CIL Technical Reporting. Verify the factual consistency "
+        "of the generated report against the provided citation snippets.\n\n"
+        "Report Body:\n" + body + "\n\n"
+        "Citations:\n" + citation_text + "\n\n"
+        "Audit Instructions:\n"
+        "1. Identify all key factual claims, metrics, or assertions in the report.\n"
+        "2. Check if each claim is supported by the citations.\n"
+        "3. Output a structured Markdown report with:\n"
+        "   - Factual Audit Summary (Verified/Unsupported/Hallucinated counts)\n"
+        "   - List of Verified Assertions\n"
+        "   - List of Unsupported Assertions (if any, with explanation)\n"
+        "   - Overall Confidence Score (0-100%)\n"
+        "Do not include <think> tags. Start immediately with '### Factual Audit Summary'."
+    )
+
+    audit_report, _ = execute_groq_resilient_chat(
+        client=client,
+        messages=[{"role": "user", "content": prompt}],
+        preferred_model=model,
+        max_tokens=1000,
+        temperature=0.0
+    )
+    return audit_report
+
 REPORT_ARCHETYPES = {
     "comprehensive_audit": {
         "title": "Comprehensive Operational & Financial Executive Brief",
@@ -266,6 +298,12 @@ def build_structured_report(config: Dict[str, Any]) -> Dict[str, Any]:
         md_lines.append(f"> **Engineer Directives:** *\"{custom_notes}\"*\n")
 
     md_lines.append(synthesized_body)
+    md_lines.append("\n")
+
+    # 5. Automated Factual Audit & Verification
+    audit_report = audit_generated_assertions(synthesized_body, clean_citations, client, active_model)
+    md_lines.append("\n## 6. Factual Audit & Verification")
+    md_lines.append(audit_report)
     md_lines.append("\n")
 
     # If custom_notes was NOT provided and report is production-oriented, append national baseline table
