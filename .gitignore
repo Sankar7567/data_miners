@@ -1,0 +1,29 @@
+# Secrets and Credentials
+api.txt
+.env
+.env.*
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.pytest_cache/
+
+# Node & Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+frontend/node_modules/
+cmpdi-ai-reporting/frontend/node_modules/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

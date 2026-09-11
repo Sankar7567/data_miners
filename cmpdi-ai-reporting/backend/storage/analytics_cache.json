@@ -1,0 +1,212 @@
+[
+  {
+    "text": "CMPDI",
+    "value": 98,
+    "category": "subsidiaries",
+    "occurrences": 233,
+    "citations": 99
+  },
+  {
+    "text": "Barakar",
+    "value": 96,
+    "category": "geological_terms",
+    "occurrences": 104,
+    "citations": 82
+  },
+  {
+    "text": "Coal Seam",
+    "value": 92,
+    "category": "geological_terms",
+    "occurrences": 64,
+    "citations": 64
+  },
+  {
+    "text": "Opencast",
+    "value": 96,
+    "category": "mining_metrics",
+    "occurrences": 161,
+    "citations": 58
+  },
+  {
+    "text": "ECL",
+    "value": 92,
+    "category": "subsidiaries",
+    "occurrences": 145,
+    "citations": 49
+  },
+  {
+    "text": "Exploration",
+    "value": 92,
+    "category": "domain_vocabulary",
+    "occurrences": 61,
+    "citations": 41
+  },
+  {
+    "text": "CCL",
+    "value": 87,
+    "category": "subsidiaries",
+    "occurrences": 64,
+    "citations": 34
+  },
+  {
+    "text": "Raniganj",
+    "value": 91,
+    "category": "geological_terms",
+    "occurrences": 49,
+    "citations": 34
+  },
+  {
+    "text": "Stripping Ratio",
+    "value": 95,
+    "category": "mining_metrics",
+    "occurrences": 64,
+    "citations": 31
+  },
+  {
+    "text": "Borehole",
+    "value": 85,
+    "category": "geological_terms",
+    "occurrences": 37,
+    "citations": 31
+  },
+  {
+    "text": "First Mile Connectivity",
+    "value": 93,
+    "category": "domain_vocabulary",
+    "occurrences": 30,
+    "citations": 29
+  },
+  {
+    "text": "Shovel",
+    "value": 81,
+    "category": "domain_vocabulary",
+    "occurrences": 28,
+    "citations": 28
+  },
+  {
+    "text": "NCL",
+    "value": 90,
+    "category": "subsidiaries",
+    "occurrences": 121,
+    "citations": 27
+  },
+  {
+    "text": "Coal Production",
+    "value": 97,
+    "category": "mining_metrics",
+    "occurrences": 63,
+    "citations": 27
+  },
+  {
+    "text": "Lower Gondwana",
+    "value": 88,
+    "category": "geological_terms",
+    "occurrences": 29,
+    "citations": 27
+  },
+  {
+    "text": "Offtake",
+    "value": 84,
+    "category": "mining_metrics",
+    "occurrences": 31,
+    "citations": 26
+  },
+  {
+    "text": "Underground",
+    "value": 91,
+    "category": "mining_metrics",
+    "occurrences": 51,
+    "citations": 20
+  },
+  {
+    "text": "CBM",
+    "value": 90,
+    "category": "domain_vocabulary",
+    "occurrences": 28,
+    "citations": 14
+  },
+  {
+    "text": "Jharia",
+    "value": 89,
+    "category": "geological_terms",
+    "occurrences": 24,
+    "citations": 12
+  },
+  {
+    "text": "Talcher",
+    "value": 86,
+    "category": "geological_terms",
+    "occurrences": 17,
+    "citations": 10
+  },
+  {
+    "text": "Washery",
+    "value": 86,
+    "category": "domain_vocabulary",
+    "occurrences": 22,
+    "citations": 8
+  },
+  {
+    "text": "SECL",
+    "value": 93,
+    "category": "subsidiaries",
+    "occurrences": 23,
+    "citations": 7
+  },
+  {
+    "text": "MCL",
+    "value": 94,
+    "category": "subsidiaries",
+    "occurrences": 18,
+    "citations": 7
+  },
+  {
+    "text": "WCL",
+    "value": 85,
+    "category": "subsidiaries",
+    "occurrences": 24,
+    "citations": 6
+  },
+  {
+    "text": "Overburden",
+    "value": 89,
+    "category": "mining_metrics",
+    "occurrences": 18,
+    "citations": 5
+  },
+  {
+    "text": "Karharbari",
+    "value": 82,
+    "category": "geological_terms",
+    "occurrences": 9,
+    "citations": 5
+  },
+  {
+    "text": "BCCL",
+    "value": 88,
+    "category": "subsidiaries",
+    "occurrences": 7,
+    "citations": 3
+  },
+  {
+    "text": "Gevra",
+    "value": 88,
+    "category": "domain_vocabulary",
+    "occurrences": 4,
+    "citations": 2
+  },
+  {
+    "text": "Kusmunda",
+    "value": 87,
+    "category": "domain_vocabulary",
+    "occurrences": 4,
+    "citations": 2
+  },
+  {
+    "text": "HEMM",
+    "value": 79,
+    "category": "domain_vocabulary",
+    "occurrences": 4,
+    "citations": 2
+  }
+]
