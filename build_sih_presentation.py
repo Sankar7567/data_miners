@@ -6,8 +6,8 @@ from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_SHAPE
 
 def build_presentation():
-    template_path = "/home/sankar/Desktop/sih/SIH2026-IDEA-Presentation-Format.pptx"
-    output_pptx = "/home/sankar/Desktop/sih/SIH2026_GeoIntel_Core_Data_Miners.pptx"
+    template_path = "SIH2026-IDEA-Presentation-Format.pptx"
+    output_pptx = "SIH2026_GeoIntel_Core_Data_Miners.pptx"
 
     prs = pptx.Presentation(template_path)
     print(f"Loaded template with {len(prs.slides)} slides.")
@@ -31,7 +31,7 @@ def build_presentation():
             if "TITLE PAGE" in shape.text:
                 shape.left = Inches(0.5)
                 shape.top = Inches(0.65)
-                shape.width = Inches(5.6)
+                shape.width = Inches(4.5)
                 shape.height = Inches(1.4)
                 
                 tf = shape.text_frame
@@ -135,19 +135,19 @@ def build_presentation():
     tf2.word_wrap = True
 
     sections_s2 = [
-        ("Proposed Solution & Prototype:", [
-            "Autonomous multimodal system for CMPDI borehole logs, Detailed Project Reports (DPRs), and CIL production data.",
-            "Functional split-screen prototype with real-time PyMuPDF spatial coordinate auditing."
+        ("Proposed Solution:", [
+            "Autonomous system for CMPDI logs & CIL data.",
+            "Split-screen prototype with real-time auditing."
         ]),
-        ("Core Engineering Capabilities:", [
-            "Spatial Vector Grounding: Extracts [x0, y0, x1, y1] coordinates per token for 100% auditable citations.",
-            "Dynamic View Synchronization: Citation bounding boxes update live on page navigation.",
-            "Autonomous Report Studio: Synthesizes executive briefs & DOCX files following custom engineering directives.",
-            "Pan-CIL Production Analytics: Benchmarks coal extraction, stripping ratios, and OBR across 8 subsidiaries."
+        ("Core Capabilities:", [
+            "Spatial Vector Grounding: Extract precise coordinates for citations.",
+            "Dynamic View: Bounding boxes update live.",
+            "Report Studio: Generate executive DOCX briefs autonomously.",
+            "Pan-CIL Analytics: Benchmark stripping ratios & OBR across subsidiaries."
         ]),
-        ("Problem Addressed & Innovation:", [
-            "Replaces manual multi-week PDF cross-referencing with sub-second verified semantic retrieval.",
-            "Zero Hallucination Guarantee: Every assertion is bound to verifiable text in official government documents."
+        ("Innovation:", [
+            "Sub-second semantic retrieval replaces manual verification.",
+            "Zero Hallucinations: Assertions bound to official text."
         ])
     ]
 
@@ -174,7 +174,7 @@ def build_presentation():
             rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
-    s2.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_chat_split.png", 
+    s2.shapes.add_picture("screenshots/feature_chat_split.png", 
                           Inches(7.6), Inches(1.3), width=Inches(5.1))
 
     cap2 = s2.shapes.add_textbox(Inches(7.6), Inches(6.0), Inches(5.1), Inches(0.4))
@@ -202,19 +202,19 @@ def build_presentation():
     tf3.word_wrap = True
 
     sections_s3 = [
-        ("Technologies to be Used:", [
-            "Frontend: React 18, Vite, Tailwind CSS, Lucide Icons, dynamic SVG coordinate overlays.",
-            "Backend API: FastAPI, Python 3.12, Uvicorn, asynchronous multipart streaming endpoints.",
-            "Spatial Extraction: PyMuPDF (Fitz) token parser preserving geometry & table bounding boxes.",
-            "Vector Database: ChromaDB persistent vector store with 384-dim dense embeddings.",
-            "Inference Hardware: Groq LPU Hardware Acceleration (LLaMA 3.3 70B & Qwen 2.5 32B).",
-            "Multi-Format Synthesis: ReportLab PDF engine, python-docx compiler, Markdown exporter."
+        ("Tech Stack:", [
+            "Frontend: React 18, Vite, Tailwind CSS.",
+            "Backend: FastAPI, Python 3.12, Uvicorn.",
+            "Parsing: PyMuPDF (Fitz) for spatial extraction.",
+            "Vector DB: ChromaDB for embeddings.",
+            "AI Hardware: Groq LPU (LLaMA 3.3 & Qwen 2.5).",
+            "Output: ReportLab, python-docx."
         ]),
-        ("Methodology & Implementation Pipeline:", [
-            "1. Harvester: Ministry of Coal web scraper & instant drag-and-drop document ingestion.",
-            "2. Spatial Indexing: Sliding-window chunking retaining exact pixel bounding coordinates.",
-            "3. Grounded Retrieval: Hybrid search combining dense vectors with inverted keyword indices.",
-            "4. Resilient Synthesis: Dynamic token budgeting with local extractive fallback."
+        ("Methodology:", [
+            "1. Harvester: Automated web scraper & PDF ingestion.",
+            "2. Indexing: Sliding-window chunking with spatial data.",
+            "3. Retrieval: Hybrid search (dense vectors + keywords).",
+            "4. Synthesis: Dynamic generation with local fallback."
         ])
     ]
 
@@ -241,7 +241,7 @@ def build_presentation():
             rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
-    s3.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/architecture_diagram.png", 
+    s3.shapes.add_picture("screenshots/architecture_diagram.png", 
                           Inches(6.4), Inches(1.3), width=Inches(6.3))
 
     cap3 = s3.shapes.add_textbox(Inches(6.4), Inches(5.95), Inches(6.3), Inches(0.4))
@@ -269,16 +269,16 @@ def build_presentation():
     tf4.word_wrap = True
 
     sections_s4 = [
-        ("Feasibility & Operational Viability:", [
-            "Validated on 100+ multi-page geological documents, CIL annual reviews, and detailed mine plans.",
-            "Sub-second vector indexing: Parses 50-page complex DPRs in under 3.2 seconds.",
-            "Enterprise Deployment: Containerized microservices ready for secure on-premises CIL servers.",
-            "100% Data Sovereignty: Zero external data exposure of confidential exploration reserves."
+        ("Feasibility & Viability:", [
+            "Validated on 100+ official geological documents.",
+            "Lightning Fast: Parses 50-page DPRs in < 3.2s.",
+            "Enterprise Ready: Containerized microservices.",
+            "Data Sovereignty: 100% secure, zero external exposure."
         ]),
-        ("Operational Challenges & Mitigations:", [
-            "API Rate Limiting: Resilient token budgeting (2200 max tokens) with exponential backoff retry.",
-            "Network Outage Tolerance: Local extractive fallback ensures zero system downtime.",
-            "Heterogeneous Archives: PyMuPDF token normalization adapts to any PDF format or scan geometry."
+        ("Challenges & Mitigations:", [
+            "Rate Limits: Resilient token budgeting & retries.",
+            "Network Outages: Local extractive fallback.",
+            "Complex Formats: PyMuPDF adapts to any scan geometry."
         ])
     ]
 
@@ -305,7 +305,7 @@ def build_presentation():
             rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
-    s4.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_document_repository.png", 
+    s4.shapes.add_picture("screenshots/feature_document_repository.png", 
                           Inches(7.6), Inches(1.3), width=Inches(5.1))
 
     cap4 = s4.shapes.add_textbox(Inches(7.6), Inches(5.95), Inches(5.1), Inches(0.4))
@@ -333,16 +333,16 @@ def build_presentation():
     tf5.word_wrap = True
 
     sections_s5 = [
-        ("Direct Impact on Target Stakeholders:", [
-            "CMPDI Geologists: Instant lookup of Gondwana stratigraphy, Barakar formations, and regional meterage.",
-            "Mine Planning Officers: Real-time tracking of Overburden Removal (OBR), stripping ratios, and productivity.",
-            "Ministry of Coal Leadership: Board-level summaries compiled in minutes rather than weeks."
+        ("Stakeholder Impact:", [
+            "Geologists: Instant lookup of stratigraphy & formations.",
+            "Planning Officers: Real-time OBR & productivity tracking.",
+            "Ministry Leadership: Summaries in minutes, not weeks."
         ]),
-        ("Quantifiable Strategic Benefits:", [
-            "85% Time Savings: Accelerates technical assessment and Detailed Project Report (DPR) evaluation.",
-            "Auditable Provenance: Spatial bounding boxes eliminate regulatory disputes and non-compliance risk.",
-            "Pan-CIL Scalability: Turnkey deployment across all 8 Coal India operational subsidiaries.",
-            "Zero Cloud Licensing: Fully self-contained stack with zero per-query commercial subscriptions."
+        ("Strategic Benefits:", [
+            "85% Time Savings in DPR evaluation.",
+            "Auditable Provenance eliminates regulatory disputes.",
+            "Scalable across all 8 Coal India subsidiaries.",
+            "Zero Cloud Licensing cost (self-contained stack)."
         ])
     ]
 
@@ -369,7 +369,7 @@ def build_presentation():
             rb.font.size = Pt(9.5)
             rb.font.color.rgb = c_body
 
-    s5.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_analytics_dashboard.png", 
+    s5.shapes.add_picture("screenshots/feature_analytics_dashboard.png", 
                           Inches(7.6), Inches(1.3), width=Inches(5.1))
 
     cap5 = s5.shapes.add_textbox(Inches(7.6), Inches(5.95), Inches(5.1), Inches(0.4))
@@ -397,13 +397,13 @@ def build_presentation():
     tf6.word_wrap = True
 
     sections_s6 = [
-        ("Project Repository & Reference Documentation:", [
-            "GitHub Repository: https://github.com/Sankar7567/data_miners (Full source code, API, and setup guide).",
-            "Ministry of Coal, GoI: Guidelines for Preparation of Mine Plans & Mine Closure Plans — coal.gov.in",
-            "Central Mine Planning & Design Institute (CMPDI): Annual Geological Exploration & Drilling Reports — cmpdi.co.in",
-            "Coal India Limited (CIL): Operational Performance Reviews & Business Responsibility Reports — coalindia.in",
-            "Directorate General of Mines Safety (DGMS): Statutory Operational Guidelines & Safety Circulars.",
-            "PyMuPDF & ChromaDB: Open-source spatial coordinate extraction and high-density vector retrieval."
+        ("References & Links:", [
+            "GitHub Repository: https://github.com/Sankar7567/data_miners",
+            "Ministry of Coal: Guidelines for Mine Plans (coal.gov.in)",
+            "CMPDI: Annual Exploration Reports (cmpdi.co.in)",
+            "Coal India (CIL): Operational Reviews (coalindia.in)",
+            "DGMS: Statutory Safety Circulars.",
+            "Libraries: PyMuPDF & ChromaDB."
         ])
     ]
 
@@ -434,7 +434,7 @@ def build_presentation():
             else:
                 rb.font.color.rgb = c_body
 
-    s6.shapes.add_picture("/home/sankar/Desktop/sih/screenshots/feature_report_studio.png", 
+    s6.shapes.add_picture("screenshots/feature_report_studio.png", 
                           Inches(7.6), Inches(1.3), width=Inches(5.1))
 
     cap6 = s6.shapes.add_textbox(Inches(7.6), Inches(5.95), Inches(5.1), Inches(0.4))
