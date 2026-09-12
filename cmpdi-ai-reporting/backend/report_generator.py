@@ -64,7 +64,22 @@ SUBSIDIARY_DATA = {
 
 def sanitize_for_reportlab(text: str) -> str:
     """Safely escape text and convert standard markdown tags for ReportLab XML parser."""
+    # Replace problematic Unicode characters with ASCII equivalents
+    text = text.replace('‑', '-')  # Non-breaking hyphen
+    text = text.replace('‐', '-')  # Hyphen
+    text = text.replace('‒', '-')  # Figure dash
+    text = text.replace('–', '-')  # En dash
+    text = text.replace('—', '--') # Em dash
+    text = text.replace('―', '--') # Horizontal bar
+    text = text.replace('−', '-')  # Minus sign
+    text = text.replace('­', '')   # Soft hyphen (remove)
+    text = text.replace('​', '')   # Zero-width space (remove)
+    text = text.replace(' ', ' ')  # Non-breaking space
+
+    # HTML escape
     text = html.escape(text)
+
+    # Convert markdown to ReportLab XML
     text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
     text = re.sub(r'\*(.+?)\*', r'<i>\1</i>', text)
     text = re.sub(r'`(.+?)`', r'<font face="Courier">\1</font>', text)

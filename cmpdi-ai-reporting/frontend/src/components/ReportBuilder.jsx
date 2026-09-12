@@ -52,9 +52,13 @@ function renderMarkdownBlocks(markdownText) {
     const trimmed = line.trim();
     if (trimmed === "### Factual Audit Summary") {
       inAudit = true;
-      auditSection.push(<div key={`audit-${idx}`} className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 my-4">
-        <h3 className="text-emerald-300 font-bold mb-2 flex items-center gap-2 text-sm"><Shield className="w-4 h-4"/> Factual Audit Summary</h3>
-      });
+      auditSection.push(
+        <div key={`audit-${idx}`} className="bg-emerald-950/30 border border-emerald-500/30 rounded-xl p-4 my-4">
+          <h3 className="text-emerald-300 font-bold mb-2 flex items-center gap-2 text-sm">
+            <Shield className="w-4 h-4"/> Factual Audit Summary
+          </h3>
+        </div>
+      );
       return;
     }
 
@@ -64,8 +68,10 @@ function renderMarkdownBlocks(markdownText) {
 
     if (inAudit) {
       if (trimmed.startsWith("- ")) {
-        auditSection[auditSection.length - 1] = React.cloneElement(auditSection[auditSection.length - 1], {
-          children: [...auditSection[auditSection.length - 1].props.children, <p key={idx} className="text-emerald-100/80 text-[11px] py-0.5 ml-2">• {trimmed.substring(2)}</p>]
+        const lastEl = auditSection[auditSection.length - 1];
+        const newChild = <p key={idx} className="text-emerald-100/80 text-[11px] py-0.5 ml-2">• {trimmed.substring(2)}</p>;
+        auditSection[auditSection.length - 1] = React.cloneElement(lastEl, {
+          children: [...React.Children.toArray(lastEl.props.children), newChild]
         });
         return;
       }
