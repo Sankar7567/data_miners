@@ -7,7 +7,9 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
+import math
+from collections import Counter
 
 import docx
 from docx.shared import Inches, Pt, RGBColor
@@ -22,6 +24,25 @@ from reportlab.lib import colors
 
 from rag_engine import query_rag, get_groq_client, get_best_model_for_client, execute_groq_resilient_chat
 from ingester import engine
+
+# For adaptive report structure generation
+try:
+    import numpy as np
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    ADAPTIVE_STRUCTURE_AVAILABLE = True
+except ImportError:
+    ADAPTIVE_STRUCTURE_AVAILABLE = False
+    logger.warning("Adaptive structure dependencies not available. Install scikit-learn and numpy for dynamic report structuring.")
+
+# For entailment checking (hallucination detection)
+try:
+    from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    import torch
+    ENTAILMENT_AVAILABLE = True
+except ImportError:
+    ENTAILMENT_AVAILABLE = False
+    logger.warning("Entailment dependencies not available. Install transformers and torch for hallucination detection.")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("report_generator")
@@ -52,6 +73,196 @@ def sanitize_for_reportlab(text: str) -> str:
 # -------------------------------------------------------------
 # Factual Audit Workflow
 # -------------------------------------------------------------
+def _analyze_content_themes(chunks: List[Dict[str, Any]]) -> List[str]:
+    """
+    Analyze retrieved chunks to identify dominant themes for adaptive report structuring.
+
+    Args:
+        chunks: List of retrieved chunks with text content
+
+    Returns:
+        List of identified themes/topics
+    """
+    if not ADAPTIVE_STRUCTURE_AVAILABLE or not chunks:
+        return []
+
+    try:
+        # Extract text content
+        texts = [chunk.get("text", "") for chunk in chunks if chunk.get("text", "").strip()]
+
+        if not texts:
+            return []
+
+        # Use TF-IDF to identify important terms
+        vectorizer = TfidfVectorizer(
+            max_features=50,
+            stop_words='english',
+            ngram_range=(1, 2),
+            min_df=1
+        )
+
+        tfidf_matrix = vectorizer.fit_transform(texts)
+        feature_names = vectorizer.get_feature_names_out()
+
+        # Get average TF-IDF scores across all documents
+        mean_scores = np.asarray(tfidf_matrix.mean(axis=0)).flatten()
+
+        # Get top terms
+        top_indices = mean_scores.argsort()[-10:][::-1]
+        top_terms = [feature_names[i] for i in top_indices]
+
+        # Map to geological themes
+        theme_mapping = {
+            "production": ["production", "output", "yield", "mt", "million tonnes"],
+            "overburden": ["overburden", "obr", "stripping", "waste", "excavation"],
+            "geological": ["stratigraphy", "formation", "barakar", "raniganj", "gondwana", "borehole"],
+            "financial": ["capex", "expenditure", "investment", "cost", "budget"],
+            "operational": ["dispatch", "rakes", "transport", "logistics", "fmc"],
+            "quality": ["gcv", "ncv", "ash", "moisture", "quality", "grade"],
+            "safety": ["safety", "accident", "fatality", "injury", "risk"],
+            "environmental": ["environmental", "pollution", "emissions", "rehabilitation"],
+            "exploration": ["exploration", "drilling", "meterage", "seismic", "reserves"],
+            "infrastructure": ["conveyor", "railway", "road", "infrastructure", "facility"]
+        }
+
+        themes = []
+        for theme, keywords in theme_mapping.items():
+            if any(keyword in term.lower() for term in top_terms for keyword in keywords):
+                themes.append(theme)
+
+        return themes[:5]  # Return top 5 themes
+
+    except Exception as e:
+        logger.warning(f"Content theme analysis failed: {e}")
+        return []
+
+def _generate_dynamic_report_structure(themes: List[str], custom_notes: str = "") -> List[Dict[str, str]]:
+    """
+    Generate dynamic report structure based on identified themes.
+
+    Args:
+        themes: List of identified themes from content analysis
+        custom_notes: User-provided directives
+
+    Returns:
+        List of section definitions for the report
+    """
+    # Default structure
+    default_structure = [
+        {"id": "executive_summary", "title": "Executive Summary", "required": True},
+        {"id": "technical_evaluation", "title": "Technical Evaluation", "required": True},
+        {"id": "operational_analysis", "title": "Operational Analysis", "required": True},
+        {"id": "recommendations", "title": "Recommendations & Conclusion", "required": True}
+    ]
+
+    # Theme-specific sections
+    theme_sections = {
+        "production": {"id": "production_performance", "title": "Production Performance Analysis", "required": False},
+        "overburden": {"id": "overburden_analysis", "title": "Overburden Removal & Stripping Ratio Analysis", "required": False},
+        "geological": {"id": "geological_assessment", "title": "Geological Stratigraphy & Exploration Assessment", "required": False},
+        "financial": {"id": "financial_review", "title": "Capital Expenditure & Financial Performance", "required": False},
+        "operational": {"id": "logistics_evaluation", "title": "Logistics & Dispatch Operations Analysis", "required": False},
+        "quality": {"id": "quality_specs", "title": "Coal Quality Specifications & Beneficiation", "required": False},
+        "safety": {"id": "safety_review", "title": "Safety Performance & Risk Assessment", "required": False},
+        "environmental": {"id": "environmental_impact", "title": "Environmental Impact & Compliance Review", "required": False},
+        "exploration": {"id": "exploration_results", "title": "Exploration Drilling & Reserve Assessment", "required": False},
+        "infrastructure": {"id": "infrastructure_status", "title": "Infrastructure Development & Maintenance Status", "required": False}
+    }
+
+    # Start with default structure
+    structure = default_structure.copy()
+
+    # Add theme-specific sections
+    for theme in themes:
+        if theme in theme_sections:
+            section = theme_sections[theme]
+            # Avoid duplicates
+            if not any(s["id"] == section["id"] for s in structure):
+                structure.append(section)
+
+    # If custom notes provided, ensure we have a directives section
+    if custom_notes.strip():
+        directive_section = {"id": "user_directives", "title": "User Directives & Custom Parameters", "required": True}
+        # Insert at the beginning after executive summary
+        if not any(s["id"] == directive_section["id"] for s in structure):
+            structure.insert(1, directive_section)
+
+    return structure
+
+def _generate_section_content(section: Dict[str, str], chunks: List[Dict[str, Any]],
+                            client: Any, model: str, tone: str, custom_notes: str = "") -> str:
+    """
+    Generate content for a specific report section.
+
+    Args:
+        section: Section definition
+        chunks: Retrieved chunks for context
+        client: Groq client
+        model: Model to use
+        tone: Analytical tone
+        custom_notes: User directives
+
+    Returns:
+        Generated section content in markdown format
+    """
+    # Prepare context from chunks
+    context_blocks = []
+    for i, chunk in enumerate(chunks[:5]):  # Use top 5 chunks for context
+        text = chunk.get("text", "").strip()
+        if len(text) >= 25:
+            source = chunk.get("source", "Unknown Source")
+            page = chunk.get("page_number", 1)
+            context_blocks.append(f"[Source {i+1}: {source} | Page {page}]\n{text}")
+
+    context_str = "\n\n".join(context_blocks)
+
+    # Build section-specific prompt
+    section_prompts = {
+        "executive_summary": "Provide a concise executive summary highlighting key findings, metrics, and overall assessment.",
+        "technical_evaluation": "Provide detailed technical analysis of geological, mining, or operational aspects based on the data.",
+        "operational_analysis": "Analyze operational efficiency, processes, systems, and performance metrics.",
+        "recommendations": "Provide actionable recommendations, strategic suggestions, and conclusion based on the analysis.",
+        "user_directives": f"Address the following user directives: {custom_notes}",
+        "production_performance": "Analyze production trends, output metrics, capacity utilization, and production efficiency.",
+        "overburden_analysis": "Evaluate overburden removal performance, stripping ratios, and excavation efficiency.",
+        "geological_assessment": "Assess geological formations, stratigraphy, borehole data, and exploration findings.",
+        "financial_review": "Review capital expenditures, financial performance, budget allocations, and cost analysis.",
+        "logistics_evaluation": "Analyze logistics operations, dispatch efficiency, transportation systems, and supply chain.",
+        "quality_specs": "Evaluate coal quality parameters, specifications, beneficiation processes, and grade distribution.",
+        "safety_review": "Review safety performance, incident statistics, risk assessments, and safety protocols.",
+        "environmental_impact": "Assess environmental impact, compliance status, mitigation measures, and sustainability initiatives.",
+        "exploration_results": "Summarize exploration drilling results, meterage achievements, and reserve estimations.",
+        "infrastructure_status": "Evaluate infrastructure development, maintenance status, facility conditions, and upgrade needs."
+    }
+
+    prompt = section_prompts.get(section["id"], f"Provide analysis for {section['title']}.")
+
+    full_prompt = (
+        f"You are a Senior Technical Analyst for CMPDI/CIL. {prompt}\n\n"
+        f"Context from Geological & Mining Records:\n{context_str}\n\n"
+        f"Analytical Tone: {tone}\n"
+        f"Focus: Provide detailed, factual analysis specific to {section['title']}.\n"
+        f"Use bullet points for key findings and bold important technical terms.\n"
+        f"Base your analysis strictly on the provided context. Do not invent facts.\n"
+        f"Output in clean markdown format."
+    )
+
+    if custom_notes and section["id"] != "user_directives":
+        full_prompt += f"\n\nConsider these user directives in your analysis: {custom_notes}"
+
+    try:
+        content, _ = execute_groq_resilient_chat(
+            client=client,
+            messages=[{"role": "user", "content": full_prompt}],
+            preferred_model=model,
+            max_tokens=800,
+            temperature=0.2
+        )
+        return content
+    except Exception as e:
+        logger.warning(f"Failed to generate content for section {section['id']}: {e}")
+        return f"*Content generation failed for {section['title']}.*"
+
 def audit_generated_assertions(body: str, citations: List[Dict[str, Any]], client: Any, model: str) -> str:
     """Verifies factual consistency of generated text against source citations."""
     citation_text = "\n".join([f"Source: {c['source']}\nSnippet: {c['exact_snippet']}" for c in citations])
@@ -272,16 +483,36 @@ def build_structured_report(config: Dict[str, Any]) -> Dict[str, Any]:
             "Please synthesize Sections 1, 2, and 3 now based on the official context records."
         )
 
-    synthesized_body, used_model = execute_groq_resilient_chat(
-        client=client,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        preferred_model=active_model,
-        max_tokens=2200,
-        temperature=0.2
-    )
+    # Use adaptive report structure generation if available and enabled
+    use_adaptive = (ADAPTIVE_STRUCTURE_AVAILABLE and
+                   os.environ.get("USE_ADAPTIVE_REPORT_STRUCTURE", "false").lower() == "true")
+
+    if use_adaptive and not custom_notes:
+        # Analyze content themes for dynamic structure
+        themes = _analyze_content_themes(chunks)
+        report_structure = _generate_dynamic_report_structure(themes, custom_notes)
+
+        # Generate content for each section
+        section_contents = []
+        for section in report_structure:
+            section_content = _generate_section_content(
+                section, chunks, client, active_model, tone, custom_notes
+            )
+            section_contents.append(f"## {section['title']}\n\n{section_content}\n")
+
+        synthesized_body = "\n".join(section_contents)
+    else:
+        # Fall back to original fixed structure
+        synthesized_body, used_model = execute_groq_resilient_chat(
+            client=client,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            preferred_model=active_model,
+            max_tokens=2200,
+            temperature=0.2
+        )
 
     # 4. Assemble the complete Markdown document
     md_lines = []

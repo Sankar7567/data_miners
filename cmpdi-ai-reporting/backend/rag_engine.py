@@ -4,13 +4,22 @@ import re
 import time
 import json
 import logging
-from typing import List, Dict, Any, Generator, Optional
+from typing import List, Dict, Any, Generator, Optional, Tuple
 from ingester import engine
+from pathlib import Path
+import numpy as np
+
+# Hybrid retrieval imports
+try:
+    from sentence_transformers import SentenceTransformer
+    from rank_bm25 import BM25Okapi
+    HYBRID_RETRIEVAL_AVAILABLE = True
+except ImportError:
+    HYBRID_RETRIEVAL_AVAILABLE = False
+    logger.warning("Hybrid retrieval dependencies not available. Install sentence-transformers and rank-bm25 for enhanced retrieval.")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("rag_engine")
-
-from pathlib import Path
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 if not GROQ_API_KEY:
@@ -30,6 +39,14 @@ if not GROQ_API_KEY:
                     break
             except Exception:
                 pass
+
+# Hybrid retrieval components
+if HYBRID_RETRIEVAL_AVAILABLE:
+    # Initialize sentence transformer model for dense embeddings
+    _DENSE_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+    # Cache for BM25 index to avoid rebuilding on every query
+    _BM25_INDEX_CACHE = {}
+    _BM25_TOKEN_CACHE = {}
 
 PREFERRED_MODELS = [
     "openai/gpt-oss-120b",
@@ -185,13 +202,44 @@ def execute_groq_resilient_chat(
 def query_rag(query: str, n_results: int = 4, custom_api_key: Optional[str] = None, source_filter: Optional[str] = None) -> Dict[str, Any]:
     """
     Execute RAG pipeline via Groq API using auto-resolved model based on key permissions.
+    Enhanced with hybrid retrieval and query expansion for geological domain.
     """
     client, active_key = get_groq_client(custom_api_key)
     active_model = get_best_model_for_client(client, active_key)
     start_time = time.time()
 
-    chunks = engine.query(query, n_results=n_results, source_filter=source_filter)
-    if not chunks:
+    # Expand query with geological domain terms
+    expanded_queries = _expand_query_geological(query)
+    # Use the original query for retrieval but we can also consider expanded queries
+    # For simplicity, we'll use the original query for retrieval but we could also retrieve from expanded queries and combine results.
+    # We'll implement a simple approach: retrieve for each expanded query and combine, then re-rank.
+
+    all_chunks = []
+    seen_chunk_ids = set()
+
+    for exp_query in expanded_queries:
+        # Use hybrid retrieval if available, else standard
+        if HYBRID_RETRIEVAL_AVAILABLE:
+            chunks = _hybrid_retrieve(exp_query, n_results=n_results, source_filter=source_filter, alpha=0.5)
+        else:
+            chunks = engine.query(exp_query, n_results=n_results, source_filter=source_filter)
+
+        for chunk in chunks:
+            # Create a unique identifier for the chunk to avoid duplicates
+            # Convert bbox to tuple if it's a list to make it hashable
+            bbox = chunk.get("bbox", [])
+            if isinstance(bbox, list):
+                bbox = tuple(bbox)
+            elif not isinstance(bbox, tuple):
+                bbox = str(bbox)
+
+            chunk_id = (chunk.get("source", ""), chunk.get("page_number", 0), bbox)
+            if chunk_id not in seen_chunk_ids:
+                seen_chunk_ids.add(chunk_id)
+                all_chunks.append(chunk)
+
+    # If we have no chunks, return early
+    if not all_chunks:
         return {
             "query": query,
             "answer": "No relevant geological, mining, or operational documentation found matching your query in the ChromaDB repository.",
@@ -199,6 +247,15 @@ def query_rag(query: str, n_results: int = 4, custom_api_key: Optional[str] = No
             "model": active_model,
             "latency_ms": round((time.time() - start_time) * 1000, 1)
         }
+
+    # Re-rank all chunks by hybrid score if available, else by original score
+    if HYBRID_RETRIEVAL_AVAILABLE and "hybrid_score" in all_chunks[0]:
+        all_chunks.sort(key=lambda x: x.get("hybrid_score", 0), reverse=True)
+    else:
+        all_chunks.sort(key=lambda x: x.get("score", 0), reverse=True)
+
+    # Take top n_results
+    chunks = all_chunks[:n_results]
 
     clean_citations = []
     for c in chunks:
@@ -216,7 +273,7 @@ def query_rag(query: str, n_results: int = 4, custom_api_key: Optional[str] = No
             "page_height": c.get("page_height", 792.0),
             "exact_snippet": clean_snippet,
             "text": text,
-            "score": c.get("score", 0.95)
+            "score": c.get("score", c.get("hybrid_score", 0.95))  # Use hybrid score if available
         })
 
     # Format context blocks with citation coordinates
@@ -290,6 +347,164 @@ ENGLISH_SEMANTIC_STOPWORDS = {
     "any", "all", "each", "every", "other", "another", "etc", "etc.", "further", "however",
     "therefore", "since", "while", "though", "whereas", "wherein", "whereby", "whether"
 }
+
+def _get_bm25_index(corpus: List[str]) -> BM25Okapi:
+    """Get or create BM25 index for the corpus."""
+    corpus_key = hash(tuple(corpus))  # Simple hash of corpus for caching
+
+    if corpus_key not in _BM25_INDEX_CACHE:
+        # Tokenize corpus for BM25
+        tokenized_corpus = [doc.lower().split() for doc in corpus]
+        _BM25_INDEX_CACHE[corpus_key] = BM25Okapi(tokenized_corpus)
+        _BM25_TOKEN_CACHE[corpus_key] = tokenized_corpus
+
+    return _BM25_INDEX_CACHE[corpus_key]
+
+def _hybrid_retrieve(query: str, n_results: int = 4, source_filter: Optional[str] = None,
+                    alpha: float = 0.5) -> List[Dict[str, Any]]:
+    """
+    Perform hybrid retrieval combining dense and sparse retrieval.
+
+    Args:
+        query: Search query
+        n_results: Number of results to return
+        source_filter: Optional source filter
+        alpha: Weight for dense vs sparse (0=all sparse, 1=all dense)
+
+    Returns:
+        List of retrieved chunks with hybrid scores
+    """
+    if not HYBRID_RETRIEVAL_AVAILABLE:
+        # Fallback to standard retrieval
+        return engine.query(query, n_results=n_results, source_filter=source_filter)
+
+    # Get standard results from ChromaDB (dense retrieval)
+    dense_results = engine.query(query, n_results=n_results*2, source_filter=source_filter)  # Get more for re-ranking
+
+    if not dense_results:
+        return []
+
+    # Extract texts for BM25
+    corpus_texts = [doc.get("text", "") for doc in dense_results]
+
+    if not corpus_texts or all(not text.strip() for text in corpus_texts):
+        return dense_results[:n_results]
+
+    # Get BM25 scores
+    try:
+        bm25_index = _get_bm25_index(corpus_texts)
+        tokenized_query = query.lower().split()
+        bm25_scores = bm25_index.get_scores(tokenized_query)
+
+        # Normalize BM25 scores to 0-1 range
+        if len(bm25_scores) > 0 and max(bm25_scores) > 0:
+            bm25_scores = bm25_scores / max(bm25_scores)
+        else:
+            bm25_scores = [0.0] * len(bm25_scores)
+
+    except Exception as e:
+        logger.warning(f"BM25 scoring failed: {e}. Falling back to dense retrieval only.")
+        bm25_scores = [0.0] * len(dense_results)
+
+    # Get dense scores (ChromaDB already returns similarity scores)
+    dense_scores = [doc.get("score", 0.0) for doc in dense_results]
+
+    # Normalize dense scores to 0-1 range (ChromaDB uses cosine distance, convert to similarity)
+    if len(dense_scores) > 0 and max(dense_scores) > 0:
+        # ChromaDB returns distances, lower is better. Convert to similarity.
+        max_dist = max(dense_scores)
+        if max_dist > 0:
+            dense_scores = [1.0 - (score / max_dist) for score in dense_scores]
+        else:
+            dense_scores = [1.0] * len(dense_scores)
+    else:
+        dense_scores = [0.0] * len(dense_results)
+
+    # Combine scores
+    hybrid_scores = []
+    for i, (dense_score, bm25_score) in enumerate(zip(dense_scores, bm25_scores)):
+        hybrid_score = alpha * dense_score + (1 - alpha) * bm25_score
+        hybrid_scores.append((i, hybrid_score))
+
+    # Sort by hybrid score descending
+    hybrid_scores.sort(key=lambda x: x[1], reverse=True)
+
+    # Return top n_results
+    top_indices = [idx for idx, _ in hybrid_scores[:n_results]]
+    hybrid_results = [dense_results[i] for i in top_indices]
+
+    # Update scores to reflect hybrid scores
+    for i, (_, hybrid_score) in enumerate(hybrid_scores[:n_results]):
+        hybrid_results[i]["hybrid_score"] = hybrid_score
+        hybrid_results[i]["score"] = hybrid_score  # Override original score
+
+    return hybrid_results
+
+def _expand_query_geological(query: str) -> List[str]:
+    """
+    Expand query with geological domain-specific terms.
+
+    Args:
+        query: Original query
+
+    Returns:
+        List of expanded queries
+    """
+    # Geological domain synonyms and related terms
+    geological_expansions = {
+        # Stratigraphy terms
+        "stratigraphy": ["stratigraphic", "formation", "layer", "bed", "stratum"],
+        "formation": ["formations", "stratigraphy", "layer", "member"],
+        "coal": ["coal seam", "coal bed", "bituminous", "anthracite", "lignite"],
+        "overburden": ["over burden", "waste rock", "stripping", "OB"],
+        "stripping ratio": ["SR", "overburden ratio", "waste to coal ratio"],
+        "gcv": ["gross calorific value", "calorific value", "heat value"],
+        "ncv": ["net calorific value", "lower calorific value"],
+        "moisture": ["water content", "humidity", "MC"],
+        "ash": ["ash content", "incombustible", "residue"],
+        "volatile matter": ["VM", "volatile", "volatile content"],
+        "fixed carbon": ["FC", "fixed carbon content"],
+
+        # Mining terms
+        "opencast": ["open cast", "surface mining", "OC"],
+        "underground": ["underground mining", "UG", "subsurface"],
+        "dispatch": ["dispatches", "shipping", "transport"],
+        "production": ["output", "yield", "extraction"],
+        "reserves": ["resources", "deposits", "inventory"],
+
+        # Geological periods
+        "gondwana": ["Gondwana formation", "Permian", "carboniferous"],
+        "barakar": ["Barakar formation", "Lower Gondwana"],
+        "raniganj": ["Raniganj formation", "Upper Gondwana"],
+
+        # Companies/subsidiaries
+        "mcl": ["Mahanadi Coalfields Limited"],
+        "secl": ["South Eastern Coalfields Limited"],
+        "ncl": ["Northern Coalfields Limited"],
+        "ccl": ["Central Coalfields Limited"],
+        "wcl": ["Western Coalfields Limited"],
+        "bccl": ["Bharat Coking Coal Limited"],
+        "ecl": ["Eastern Coalfields Limited"],
+    }
+
+    expanded_queries = [query]  # Always include original
+
+    query_lower = query.lower()
+    for key, expansions in geological_expansions.items():
+        if key in query_lower:
+            for expansion in expansions:
+                expanded_query = query_lower.replace(key, expansion)
+                if expanded_query != query_lower:
+                    expanded_queries.append(expanded_query)
+
+    # Also add common geological terms if query is short
+    if len(query.split()) <= 3:
+        geological_terms = ["geological", "mining", "coal", "stratigraphy", "formation"]
+        for term in geological_terms:
+            if term not in query_lower:
+                expanded_queries.append(f"{query} {term}")
+
+    return list(set(expanded_queries))  # Remove duplicates
 
 def extract_domain_entities_via_inference(sample_chunks: List[str], custom_api_key: Optional[str] = None) -> List[Dict[str, Any]]:
     """
